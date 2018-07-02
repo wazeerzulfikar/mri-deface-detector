@@ -19,9 +19,9 @@ class Dataset:
         self.batch_size = batch_size
 
         for path in paths:
-        	if not os.path.exists(path):
-        		raise Exception('"{}" does not exist!'.format(path))
-        	self._load_files(path)
+            if not os.path.exists(path):
+                raise Exception('"{}" does not exist!'.format(path))
+            self._load_files(path)
 
         print('Number of NIFTI files found : ', len(self.mri_files))
 
@@ -44,6 +44,7 @@ class Dataset:
         img = nib.load(filename)
         return img.get_data()
 
+
     def _batch_read(self, files, start_index):
         '''Reads MRI images batch by batch. All defaced images are identified by a "deface" in the file name.'''
 
@@ -61,15 +62,16 @@ class Dataset:
 
             self.save_as_npz(f, dim_0, dim_1, dim_2, label)
 
+
     def load_save_images(self):
 
         start = time.time()
 
         if self.verbose==1:
-        	import tqdm
-        	looper = tqdm.trange(0, len(self.mri_files),self.batch_size)
+            import tqdm
+            looper = tqdm.trange(0, len(self.mri_files),self.batch_size)
         else:
-        	looper = range(0,len(self.mri_files),self.batch_size)
+            looper = range(0,len(self.mri_files),self.batch_size)
         
         for i in looper:
             if self.verbose == 1:
@@ -89,9 +91,7 @@ class Dataset:
     def save_as_npz(self, f, dim_0, dim_1, dim_2, label):
 
         f = f.split('/')[-1].replace('.nii.gz','.npz')
-        
         savename = os.path.join(self.save_path, f)
-
         np.savez(savename, dim_0=dim_0, dim_1=dim_1, dim_2=dim_2, label=np.array(label))
 
 
@@ -163,7 +163,6 @@ class Generator:
                         dims[j].append(cv2.resize(img[j].astype('float'), target_size))
 
         seq_det = seq.to_deterministic()
-
         aug_mri = []
 
         for i in range(3):
@@ -191,14 +190,13 @@ class Generator:
 
     def keras_generator(self, batch_size = 16, train=True):
 
+        #sizes = [(64,64), (128,128), (196,196), (224,224), (256,256)]
         sizes = [(64,64)]
 
         while True:
-            
             if train:
-            
-                random.shuffle(self.train_files)
-                    
+                random.shuffle(self.train_files)   
+
                 for i in range(0, len(self.train_files), batch_size):
                     batch_files = self.train_files[i:i+batch_size]
                     batch_x, batch_y = self.batch_read(batch_files, target_size=random.choice(sizes))
@@ -207,7 +205,7 @@ class Generator:
 
             else:
                 random.shuffle(self.test_files)
-                    
+
                 for i in range(0, len(self.test_files), batch_size):
                     batch_files = self.test_files[i:i+batch_size]
                     batch_x, batch_y = self.batch_read(batch_files, target_size=random.choice(sizes))

@@ -4,150 +4,31 @@ import os
 import nibabel as nib
 import random
 import time
-
-class Generator:
-
-    def __init__(self, path, split=0.8):
-
-        self.path = path
-        self.mri_files = [i for i in os.listdir(path) if i.endswith('npz')]
-        self.train_files, self.test_files = self.train_test_split(split=split)
-
-            
-    def train_test_split(self, split=0.8, shuffle=True):
-        '''Shuffles, splits and returns train and test set as filenames'''
-        
-        if shuffle:
-            random.shuffle(self.mri_files)
-
-        split_index = int(split*len(self.mri_files))
-        train_files = self.mri_files[:split_index]
-        test_files = self.mri_files[split_index:]
-        
-        return train_files, test_files
-
-
-    def load_npz(self,f):
-
-        data = np.load(os.path.join(self.path,f))
-
-        dim_0 = data['dim_0']
-        dim_1 = data['dim_1']
-        dim_2 = data['dim_2']
-        label = data['label']
-
-        return ([dim_0, dim_1, dim_2], label)
-
-
-    def augment(self, images, target_size=None):
-        '''Function for augmenting MRI images while training, to increase generalization'''
-
-        sometimes = lambda aug : iaa.Sometimes(0.3,aug)
-
-        # The commented augmentations sometimes destroyed the image. Need to discuss which ones are appropriate here
-
-        seq = iaa.Sequential([
-            sometimes(iaa.GaussianBlur(sigma=(0.0,2.0))),
-            sometimes(iaa.ContrastNormalization((0.9,1.1))),
-            sometimes(iaa.Multiply((0.95,1.05))),
-          #  iaa.Sharpen(alpha=(0, 0.5), lightness=(0.9, 1.1)),
-            iaa.Fliplr(0.5),
-            iaa.Flipud(0.5),
-
-            iaa.OneOf([
-                iaa.Affine(rotate=(90)),
-                iaa.Affine(rotate=(-90)),
-                iaa.Affine(rotate=(0))
-            ])
-        ])
-
-        dims = [list() for i in range(3)]
-
-        if target_size:
-                for i in range(len(images)):
-                    img = images[i]
-                    for j in range(len(dims)):
-                        dims[j].append(cv2.resize(img[j].astype('float'), target_size))
-
-        seq_det = seq.to_deterministic()
-
-        aug_mri = []
-
-        for i in range(3):
-            aug_images = seq_det.augment_images(dims[i])
-            aug_mri.append(np.expand_dims(aug_images, axis=3)/255.)
-
-        return aug_mri
-
-
-    def batch_read(self, batch_files, target_size):
-
-        mri_images = list()
-        labels = list()
-
-        for e,f in enumerate(batch_files):
-            mri, label = self.load_npz(f)
-            mri_images.append(mri)
-            labels.append(label)
-
-        aug_mri = self.augment(mri_images, target_size)
-
-        return (aug_mri, np.array(labels))
-
-
-
-    def keras_generator(self, batch_size = 16, train=True):
-
-        sizes = [(64,64)]
-
-        while True:
-            
-            if train:
-            
-                random.shuffle(self.train_files)
-                    
-                for i in range(0, len(self.train_files), batch_size):
-                    batch_files = self.train_files[i:i+batch_size]
-                    batch_x, batch_y = self.batch_read(batch_files, target_size=random.choice(sizes))
-                        
-                    yield (batch_x , batch_y)
-
-            else:
-                random.shuffle(self.test_files)
-                    
-                for i in range(0, len(self.test_files), batch_size):
-                    batch_files = self.test_files[i:i+batch_size]
-                    batch_x, batch_y = self.batch_read(batch_files, target_size=random.choice(sizes))
-                        
-                    yield (batch_x, batch_y)
-
-
-    def test_keras_generator(self, batch_size=4):
-
-        import matplotlib.pyplot as plt
-
-        g = self.keras_generator(batch_size=batch_size)
-        batch_x, batch_y = next(g)
-
-        plt.imshow(np.squeeze(batch_x[0][0]), 'gray')
-        plt.show()
-
-        plt.imshow(np.squeeze(batch_x[1][0]), 'gray')
-        plt.show()
-
-        plt.imshow(np.squeeze(batch_x[2][0]), 'gray')
-        plt.show()
-
-
-import imgaug as ia
-from imgaug import augmenters as iaa
 from keras import layers, models
 from keras import regularizers
 import keras.backend as K
 
-# In[22]:
+from utils import Dataset, Generator
+
+paths = ['../mri_data/IXI-Dataset/T1-Dataset', '../mri_data/IXI-Defaced/T1-Defaced']
+
+dataset = Dataset(paths, 'np_data')
+dataset.load_save_images()
+
+generator = Generator('np_data')
+
+n_train = len(generator.train_files)
+n_test = len(generator.test_files)
+
+print('Number of train images :', n_train)
+print('Number of test images :', n_test)
+
+# Test to check generator
+# generator.test_keras_generator(batch_size=4)
+
 def relu6(x):
     return K.relu(x, max_value=6)
+
 
 def _Conv_BN_RELU(x, filters=32, kernel=3, strides=1, padding='same'):
     '''Helper to create a modular unit containing Convolution, BatchNormalizaton and Activation'''
@@ -156,6 +37,7 @@ def _Conv_BN_RELU(x, filters=32, kernel=3, strides=1, padding='same'):
     x = layers.BatchNormalization()(x)
     x = layers.Activation(relu6)(x)
     return x  
+
 
 def create_submodel():
     '''The feature extracting submodel for which shares parameters'''
@@ -204,34 +86,23 @@ def create_model():
 
     return model
 
-
-# In[23]:
+# Defining customized metrics
 def sensitivity(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
     return true_positives / (possible_positives + K.epsilon())
+
 
 def specificity(y_true, y_pred):
     true_negatives = K.sum(K.round(K.clip((1-y_true) * (1-y_pred), 0, 1)))
     possible_negatives = K.sum(K.round(K.clip(1-y_true, 0, 1)))
     return true_negatives / (possible_negatives + K.epsilon())
 
+
 # Create and compile Keras model
 model = create_model()
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy',sensitivity, specificity])
 print(model.summary())
-
-
-# Test to check generator
-generator = Generator('np_data')
-
-n_train = len(generator.train_files)
-n_test = len(generator.test_files)
-
-print('Number of train images :', n_train)
-print('Number of test images :', n_test)
-
-generator.test_keras_generator(batch_size=4)
 
 # Create necessary folders for logging and saving
 #os.makedirs('models',exist_ok=True)
