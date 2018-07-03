@@ -153,7 +153,7 @@ class Generator:
                 iaa.Affine(rotate=(0))
             ])
         ])
-        
+
         dimensions = [list() for i in range(3)]
 
         if target_size:
@@ -191,10 +191,7 @@ class Generator:
 
 
 
-    def keras_generator(self, batch_size = 16, train=True, augment=True):
-
-        #sizes = [(64,64), (128,128), (196,196), (224,224), (256,256)]
-        sizes = [(64,64)]
+    def keras_generator(self, batch_size = 16, train=True, augment=True, target_size=[(64,64)]):
 
         while True:
             if train:
@@ -202,7 +199,7 @@ class Generator:
 
                 for i in range(0, len(self.train_files), batch_size):
                     batch_files = self.train_files[i:i+batch_size]
-                    batch_x, batch_y = self.batch_read(batch_files, target_size=random.choice(sizes), augment=augment)
+                    batch_x, batch_y = self.batch_read(batch_files, target_size=random.choice(target_size), augment=augment)
                         
                     yield (batch_x , batch_y)
 
@@ -211,7 +208,7 @@ class Generator:
 
                 for i in range(0, len(self.test_files), batch_size):
                     batch_files = self.test_files[i:i+batch_size]
-                    batch_x, batch_y = self.batch_read(batch_files, target_size=random.choice(sizes), augment=augment)
+                    batch_x, batch_y = self.batch_read(batch_files, target_size=random.choice(target_size), augment=augment)
                         
                     yield (batch_x, batch_y)
 

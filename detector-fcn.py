@@ -30,7 +30,7 @@ def relu6(x):
     return K.relu(x, max_value=6)
 
 
-def Conv_BN_RELU(x, filters=32, kernel=3, strides=1, padding='same'):
+def _Conv_BN_RELU(x, filters=32, kernel=3, strides=1, padding='same'):
     '''Helper to create a modular unit containing Convolution, BatchNormalizaton and Activation'''
 
     x = layers.Conv2D(filters,kernel,strides=strides,padding=padding)(x)
@@ -38,40 +38,39 @@ def Conv_BN_RELU(x, filters=32, kernel=3, strides=1, padding='same'):
     x = layers.Activation(relu6)(x)
     return x  
 
+
 def create_submodel():
     '''The feature extracting submodel for which shares parameters'''
 
-
     inp = layers.Input(shape=(None,None,1))
 
-    conv1 = Conv_BN_RELU(inp, filters=8, kernel=3, strides=1, padding='same')
-    conv1 = layers.MaxPooling2D()(conv1)
+    conv1 = _Conv_BN_RELU(inp, filters=8, kernel=3, strides=1, padding='same')
+    conv1 = _Conv_BN_RELU(conv1, filters=8, kernel=3, strides=2, padding='same')
 
-    conv2 = Conv_BN_RELU(conv1, filters=16, kernel=3, strides=1, padding='same')
-    conv2 = Conv_BN_RELU(conv2, filters=16, kernel=3, strides=1, padding='same')
-    conv2 = layers.MaxPooling2D()(conv2)
+    conv2 = _Conv_BN_RELU(conv1, filters=16, kernel=3, strides=1, padding='same')
+    conv2 = _Conv_BN_RELU(conv2, filters=16, kernel=2, strides=2, padding='same')
+  #  conv2 = layers.MaxPooling2D()(conv2)
 
-#     conv2 = Conv_BN_RELU(conv2, filters=16, kernel=2, strides=2, padding='same')
+    conv3 = _Conv_BN_RELU(conv2, filters=24, kernel=3, strides=1, padding='same')
+    conv3 = _Conv_BN_RELU(conv3, filters=24, kernel=2, strides=2, padding='same')
+  #  conv3 = layers.MaxPooling2D()(conv3)
 
-    conv3 = Conv_BN_RELU(conv2, filters=32, kernel=3, strides=1, padding='same')
-    conv3 = Conv_BN_RELU(conv3, filters=32, kernel=3, strides=1, padding='same')
-    conv3 = layers.MaxPooling2D()(conv3)
+    conv4 = _Conv_BN_RELU(conv3, filters=32, kernel=3, strides=1, padding='same')
+    conv4 = _Conv_BN_RELU(conv4, filters=64, kernel=2, strides=2, padding='same')
 
-    out = layers.Flatten()(conv3)
+    out = layers.GlobalAveragePooling2D()(conv4)
 
-    model = models.Model(inp,out)
+    submodel = models.Model(inp,out)
+    
+    return submodel
 
-    print(model.summary())
 
-    return model
-
-def create_model(input_shape=(32,32)):
+def create_model():
     '''Assembles all the submodels into a unified single model'''
 
-
-    inp1 = layers.Input(shape=(input_shape[0],input_shape[1],1), name='input_1')
-    inp2 = layers.Input(shape=(input_shape[0],input_shape[1],1), name='input_2')
-    inp3 = layers.Input(shape=(input_shape[0],input_shape[1],1), name='input_3')
+    inp1 = layers.Input(shape=(None,None,1), name='input_1')
+    inp2 = layers.Input(shape=(None,None,1), name='input_2')
+    inp3 = layers.Input(shape=(None,None,1), name='input_3')
 
     submodel = create_submodel()
 
@@ -80,12 +79,12 @@ def create_model(input_shape=(32,32)):
     three = submodel(inp3)
 
     concat = layers.Concatenate()([one,two,three])
-    out = layers.Dense(32,activation='sigmoid')(concat)
-    dropout = layers.Dropout(0.5)(out)
-
+    dropout = layers.Dropout(0.2)(concat)
     out = layers.Dense(1,activation='sigmoid',name='output_node')(dropout)
 
-    return models.Model(inputs=[inp1,inp2,inp3],outputs=out)
+    model = models.Model(inputs=[inp1,inp2,inp3],outputs=out)
+
+    return model
 
 # Defining customized metrics
 def sensitivity(y_true, y_pred):
@@ -100,9 +99,8 @@ def specificity(y_true, y_pred):
     return true_negatives / (possible_negatives + K.epsilon())
 
 
-input_shape = (32,32)
 # Create and compile Keras model
-model = create_model(input_shape)
+model = create_model()
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy',sensitivity, specificity])
 print(model.summary())
 
@@ -113,7 +111,7 @@ print(model.summary())
 from keras.callbacks import ModelCheckpoint, CSVLogger
 
 #sizes = [(64,64), (128,128), (196,196), (224,224), (256,256)]
-sizes = [input_shape]
+sizes = [(64,64)]
 
 batch_size = 16
 
