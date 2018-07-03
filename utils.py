@@ -132,7 +132,7 @@ class Generator:
         return ([dim_0, dim_1, dim_2], label)
 
 
-    def augment(self, images, target_size=None):
+    def preprocess(self, images, target_size=None, augment=True):
         '''Function for augmenting MRI images while training, to increase generalization'''
 
         sometimes = lambda aug : iaa.Sometimes(0.3,aug)
@@ -153,26 +153,29 @@ class Generator:
                 iaa.Affine(rotate=(0))
             ])
         ])
-
-        dims = [list() for i in range(3)]
+        
+        dimensions = [list() for i in range(3)]
 
         if target_size:
-                for i in range(len(images)):
-                    img = images[i]
-                    for j in range(len(dims)):
-                        dims[j].append(cv2.resize(img[j].astype('float'), target_size))
+            for i in range(len(images)):
+                img = images[i]
+                for dim in range(len(dimensions)):
+                    dimensions[dim].append(cv2.resize(img[dim].astype('float'), target_size))
 
         seq_det = seq.to_deterministic()
-        aug_mri = []
+        preprocessed_mri = []
 
-        for i in range(3):
-            aug_images = seq_det.augment_images(dims[i])
-            aug_mri.append(np.expand_dims(aug_images, axis=3)/255.)
+        for dim in range(len(dimensions)):
+            if augment:
+                aug_images = seq_det.augment_images(dimensions[dim])
+            else:
+                aug_images = np.array(dimensions[dim])
+            preprocessed_mri.append(np.expand_dims(aug_images, axis=3)/255.)
 
-        return aug_mri
+        return preprocessed_mri
 
 
-    def batch_read(self, batch_files, target_size):
+    def batch_read(self, batch_files, target_size=None, augment=True):
 
         mri_images = list()
         labels = list()
@@ -182,13 +185,13 @@ class Generator:
             mri_images.append(mri)
             labels.append(label)
 
-        aug_mri = self.augment(mri_images, target_size)
+        batch = self.preprocess(mri_images, target_size=target_size, augment=augment)
 
-        return (aug_mri, np.array(labels))
+        return (batch, np.array(labels))
 
 
 
-    def keras_generator(self, batch_size = 16, train=True):
+    def keras_generator(self, batch_size = 16, train=True, augment=True):
 
         #sizes = [(64,64), (128,128), (196,196), (224,224), (256,256)]
         sizes = [(64,64)]
@@ -199,7 +202,7 @@ class Generator:
 
                 for i in range(0, len(self.train_files), batch_size):
                     batch_files = self.train_files[i:i+batch_size]
-                    batch_x, batch_y = self.batch_read(batch_files, target_size=random.choice(sizes))
+                    batch_x, batch_y = self.batch_read(batch_files, target_size=random.choice(sizes), augment=augment)
                         
                     yield (batch_x , batch_y)
 
@@ -208,7 +211,7 @@ class Generator:
 
                 for i in range(0, len(self.test_files), batch_size):
                     batch_files = self.test_files[i:i+batch_size]
-                    batch_x, batch_y = self.batch_read(batch_files, target_size=random.choice(sizes))
+                    batch_x, batch_y = self.batch_read(batch_files, target_size=random.choice(sizes), augment=augment)
                         
                     yield (batch_x, batch_y)
 

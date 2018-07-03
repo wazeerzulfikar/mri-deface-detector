@@ -112,8 +112,8 @@ from keras.callbacks import ModelCheckpoint, CSVLogger
 
 batch_size = 16
 
-train_gen = generator.keras_generator(batch_size=16, train=True)
-val_gen = generator.keras_generator(batch_size=16, train=True)
+train_gen = generator.keras_generator(batch_size=16, train=True, augment=True)
+val_gen = generator.keras_generator(batch_size=16, train=False, augment=False)
 
 checkpoint = ModelCheckpoint(filepath='models/model_best.h5', save_best_only=True, monitor='val_loss',
                              save_weights_only=False)
