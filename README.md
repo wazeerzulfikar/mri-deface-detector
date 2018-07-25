@@ -2,5 +2,14 @@
 
 [WIP] A deployable JS tool using Deep Learning to detect if defacing has been done on MRI Scans
 
-To try out the node app:
-Run `npm run watch`
+## How to Run the Detector
+
+Using npm:
+
+
+```
+npm install
+npm run watch
+```
+
+Upload a `NIFTI` file to see results.
