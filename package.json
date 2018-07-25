@@ -1,0 +1,29 @@
+{
+  "name": "mri-deface-detector",
+  "version": "0.1.0",
+  "description": "Detects if NIFTI image has been defaced",
+  "main": "index.js",
+  "engines": {
+    "node": ">=8.9.0"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^0.12.0",
+    "babel-core": "^6.26.3",
+    "babel-preset-es2015": "^6.24.1",
+    "babelify": "^8.0.0",
+    "browserify": "^16.2.2",
+    "express": "^4.16.3",
+    "jimp": "^0.2.27",
+    "mathjs": "^5.0.3",
+    "ndarray": "^1.0.18",
+    "nifti-js": "^1.0.1",
+    "nifti-reader-js": "^0.5.4",
+    "pica": "^4.1.1",
+    "resize-image": "^0.1.0",
+    "watchify": "^3.11.0"
+  },
+  "scripts": {
+    "build": "browserify index.js -o public/bundle.js",
+    "watch": "watchify index.js -o public/bundle.js & node server.js & open http://localhost:8080"
+  }
+}
