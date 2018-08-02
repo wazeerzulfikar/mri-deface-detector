@@ -45,15 +45,30 @@ class Dataset:
         return img.get_data()
 
 
-    def _batch_read(self, files, start_index):
+    def minmax(self, img):
+        '''MinMax normalization of image'''
+        return (img/(np.max(img)-np.min(img)))*255
+
+    def _batch_read(self, files, start_index, preprocess=None):
         '''Reads MRI images batch by batch. All defaced images are identified by a "deface" in the file name.'''
 
         for f in files:
             img = self.read_mri_image(f)
-            
-            dim_0 = np.mean(img,axis=0)
-            dim_1 = np.mean(img,axis=1)
-            dim_2 = np.mean(img,axis=2)
+            img = self.minmax(img)
+
+            if preprocess not in ['mean','slice']:
+                 raise Exception(' Preprocess has to be one of [mean, slice]!')
+
+            if preprocess=='mean':            
+                dim_0 = self.minmax(np.mean(img,axis=0))
+                dim_1 = self.minmax(np.mean(img,axis=1))
+                dim_2 = self.minmax(np.mean(img,axis=2))
+
+            elif preprocess=='slice':
+                dimensions = img.shape
+                dim_0 = img[dimensions[0]//2,:,:]
+                dim_1 = img[:,dimensions[1]//2,:]
+                dim_2 = img[:,:,dimensions[2]//2,]
             
             if 'deface' in f:
                 label = 1
@@ -77,11 +92,11 @@ class Dataset:
             if self.verbose == 1:
                 os.system('echo "Process Starting.."')
             if i+self.batch_size > len(self.mri_files):
-                self._batch_read(self.mri_files[i:], i)
+                self._batch_read(self.mri_files[i:], i, preprocess='slice')
                 if self.verbose == 1:
                     print(len(self.mri_files), " Done")
             else:
-                self._batch_read(self.mri_files[i:i+self.batch_size], i)
+                self._batch_read(self.mri_files[i:i+self.batch_size], i, preprocess='slice')
                 if self.verbose == 1:
                     print(i+self.batch_size, " Done")
                     
