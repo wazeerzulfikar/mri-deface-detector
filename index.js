@@ -1,12 +1,12 @@
 var http = require('http');
 const tf = require('@tensorflow/tfjs');
 
-const data = require('./public/data/mri_32.json')
+const data = require('./public/data/mri_full_uint8.json')
 const data_64 = require('./public/data/mri_64.json')
 
 var path = require('path')
 
-// var jimp = require('jimp')
+var Jimp = require('jimp')
 // var sharp = require('sharp');
 var pica = require('pica');
 
@@ -16,6 +16,7 @@ var niftijs = require('nifti-reader-js')
 var pako = require('pako')
 var ndarray = require('ndarray')
 var math = require('mathjs')
+var nj = require('numjs')
 
 let model;
 
@@ -39,7 +40,7 @@ function readFile(e) {
 
 	reader.onerror = (e) => console.log('error');
 
-	reader.onload = function(e) {
+	reader.onload = async function(e) {
 
 		if (e.target.readyState== FileReader.DONE) {
 			if (!e.target.result) {
@@ -68,16 +69,26 @@ function readFile(e) {
 
 				var unzipped = pako.inflate(e.target.result);
 				var contents = nifti.parse(unzipped);
-				console.log(contents)
+				var image = contents.data
+				// console.log(contents)
 
 				// Check if contents are correct using sum of pixels
 
-				var check = new Uint8Array(contents.data)
+				// var check = new int16Array(contents.data)
 				// const uniqueValues = [...new Set(check)]; 
-				console.log(check.reduce((a,b)=>a+b,0));
+				// console.log(check);
 
+				console.log(image)
+				var dims = await preprocess(image)
+				var dim_0 = dims[0]
+				var dim_1 = dims[1]
+				var dim_2 = dims[2]
 
-				// preprocess(contents);
+				// test(dim_0, dim_1, dim_2,1);
+
+					var dim_0_32 = nj.float64(resize(dim_0, 32, 32));
+				var dim_1_32 = nj.float64(resize(dim_1, 32, 32));
+					var dim_2_32 = nj.float64(resize(dim_2, 32, 32));
 			}
 		}
 	};
@@ -86,90 +97,136 @@ function readFile(e) {
 
 }
 
-function preprocess(contents) {
+
+async function preprocess(contents) {
 	// Main function for preprocessing the contents of the NIFTI file, before feeding to model
 
-	normalArray = Array.prototype.slice.call(contents.data);
-	var mat = math.matrix(normalArray)
-	var dimensions = contents.sizes.slice()
-	console.log(dimensions)
+	var njarray = nj.array(contents);
+	console.log('rodcut')
 
-	// Reshape takes too much time - Need to check
-	// mat = math.reshape(mat,dimensions)
 
-	var height = dimensions[0];
-	var width = dimensions[1];
-	var depth = dimensions[2];
+	var dimensions = [256, 256, 150];
 
-	// Obtain mean across dimension
-	var dim_0 = math.mean(mat,0);
-	var dim_1 = math.mean(mat,1);
-	var dim_2 = math.mean(mat,2);
+	njarray = njarray.reshape(dimensions);
 
+	console.log('Reshape Done')
+
+
+	var dims = []
+
+	var key = [null, null, null]
+
+	// for (var i=0;i<dimensions.length;i++) {
+	// 	var key = [null, null, null]
+	// 	key[i] = dim/2;
+	// 	var dim = njarray.pick(key)
+	// 	console.log(dim);
+	// 	dims.push(dim)
+	// }
+	var dim = njarray.pick(128,null,null)
+
+	// console.log(dim);
+	dims.push(dim)
+	var dim = njarray.pick(null,128,null)
+
+	// console.log(dim);
+	dims.push(dim)
+	var dim = njarray.pick(null,null,75)
+
+	// console.log(dim);
+	dims.push(dim)
+
+
+	return dims
 
 }
 
-function resize() {
-	// Function for checking resizing of image.
 
-	var dim_0_64 = math.matrix(data_64.dim_0)
-	var dim_1_64 = math.matrix(data_64.dim_1)
-	var dim_2_64 = math.matrix(data_64.dim_2)
+function resize(img_data, target_height, target_width) {
+	// Function for  resizing of image.
 
-	math.reshape(dim_0_64, [64,64])
+	// var image_data = img.selection.data;
 
-	// pica's resize buffer apparently not a function. But its present in the documentation
+	var width = img_data.shape[0]
+	var height = img_data.shape[1]
+	img_data = img_data.flatten().tolist();
 
-	pica.resizeBuffer(dim_0_64.toArray(), 32, 32).then((image)=>console.log('Success')).catch((err)=>console.log(err))
+	console.log(height)
+	console.log(width)
+	console.log('Before copying')
+
+	var cross = new Jimp(height,width, function (err, image) {
+
+		let buffer = image.bitmap.data
+		var i = 0;
+		for(var x=0; x<height*width*4;x+=4) {
+			// const offset = (y*width+x)*4;
+			buffer[x] = img_data[i];
+			buffer[x+1] = img_data[i];
+			buffer[x+2] = img_data[i];
+			buffer[x+3] = 255;
+			i++;
+			
+		}
 
 
-	// jimp needs mime string in buffer
-
-	// var dim_0_64_resized = jimp.read(Buffer.from(dim_0_64.toArray())).then(function (image) {
- //    // console.log('Sucess')
- 	//	return image.resize(256, 256)
-	// }).catch(function (err) {
-	//     // handle an exception
-	// });
+		image.getBase64(Jimp.MIME_JPEG, function (err, src) {
+        const img = document.createElement('img');
+        img.setAttribute('src', src);
+        document.body.appendChild(img)});
 
 
-	// Sharp not browserifying
+        image.resize(target_height,target_width);
 
-	// sharp(Buffer.from(dim_0_64.toArray())
- //  	.(32, 32)
+		
+	});
+
+	var i = 0;
+	let resized_image_data = new Float64Array(target_height*target_width);
+    for(var x=0; x<height*width*4;x+=4) {
+		resized_image_data[i] = cross.bitmap.data[x];
+		i++;
+		
+	}
+		console.log(resized_image_data.reduce((a,b)=>a+b,0));
 
 
-	// console.log(dim_0_64)
-	var dim_0_32 = math.matrix(data.dim_0)
+    return resized_image_data;
+	
+	// const uniqueValues = [...new Set(cross.bitmap.data)]; 
 
-	// console.log(dim_0_64_resized.toArray().reduce((a,b)=>a+b,0));
-	console.log(dim_0_32.toArray().reduce((a,b)=>a+b,0));
-
+	// console.log(uniqueValues)
 	
 	
 }
 
 
-async function test(mri) {
+async function test(dim_0, dim_1, dim_2, label) {
 
 	// Function to test the model with given mri model
 
-	var dim_0_32 = math.matrix(mri.dim_0)
-	var dim_1_32 = math.matrix(mri.dim_1)
-	var dim_2_32 = math.matrix(mri.dim_2)
 
-	dim_0_32 = math.multiply(dim_0_32, 1/255);
-	dim_1_32 = math.multiply(dim_1_32, 1/255);
-	dim_2_32 = math.multiply(dim_2_32, 1/255);
+	var dim_0_32 = nj.float64(resize(dim_0, 32, 32));
+	var dim_1_32 = nj.float64(resize(dim_1, 32, 32));
+	var dim_2_32 = nj.float64(resize(dim_2, 32, 32));
 
-	var dim_0 = await tf.tensor4d(dim_0_32.toArray(), [1,32,32,1]);
-	var dim_1 = await tf.tensor4d(dim_1_32.toArray(), [1,32,32,1]);
-	var dim_2 = await tf.tensor4d(dim_2_32.toArray(), [1,32,32,1]);
+	dim_0_32 = dim_0_32.divide(255);
+	dim_1_32 = dim_1_32.divide(255);
+	dim_2_32 = dim_2_32.divide(255);
+
+	console.log(dim_0_32.flatten().tolist().reduce((a,b)=>a+b,0));
+	console.log(dim_1_32.flatten().tolist().reduce((a,b)=>a+b,0));
+	console.log(dim_2_32.flatten().tolist().reduce((a,b)=>a+b,0));
+
+
+
+	var dim_0 = await tf.tensor4d(dim_0_32.flatten().tolist(), [1,32,32,1]);
+	var dim_1 = await tf.tensor4d(dim_1_32.flatten().tolist(), [1,32,32,1]);
+	var dim_2 = await tf.tensor4d(dim_2_32.flatten().tolist(), [1,32,32,1]);
 
 	var dims = [dim_0, dim_1, dim_2];
 
-	const prediction = model.predict(dims);
-	const label = mri.label;
+	var prediction = model.predict(dims);
 	console.log(prediction)
 	statusElement.innerText = `Prediction : ${prediction} , Actual : ${label}`;
 
@@ -188,7 +245,12 @@ async function main() {
 
 	// await resize();
 
-	test(data);
+	var dims = await preprocess(data.image)
+	var dim_0 = dims[0]
+	var dim_1 = dims[1]
+	var dim_2 = dims[2]
+
+	test(dim_0, dim_1, dim_2, data.label);
 
 
 }
