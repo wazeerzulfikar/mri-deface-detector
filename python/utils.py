@@ -10,15 +10,14 @@ from imgaug import augmenters as iaa
 class Dataset:
     '''Class that handles loading the MRI data and saving it in a npz format for generator'''
 
-    def __init__(self, paths, save_path, batch_size=100, verbose=1):
+    def __init__(self, load_paths, batch_size=100, verbose=1):
         
-        self.paths = paths 
-        self.save_path = save_path
+        self.paths = load_paths 
         self.mri_files = list()
         self.verbose = verbose
         self.batch_size = batch_size
 
-        for path in paths:
+        for path in self.paths:
             if not os.path.exists(path):
                 raise Exception('"{}" does not exist!'.format(path))
             self._load_files(path)
@@ -49,36 +48,51 @@ class Dataset:
         '''MinMax normalization of image'''
         return (img/(np.max(img)-np.min(img)))*255
 
-    def _batch_read(self, files, start_index, preprocess=None):
+    @staticmethod
+    def single_read(self, f, preprocess=None):
+        '''Reads a single NIFTI image, preprocesses it and returns the cross-sections'''
+
+        if preprocess not in ['mean','slice']:
+            raise Exception(' Preprocess has to be one of [mean, slice]!')
+
+        img = self.read_mri_image(f)
+        img = self.minmax(img)
+
+        if preprocess=='mean':            
+            dim_0 = self.minmax(np.mean(img,axis=0))
+            dim_1 = self.minmax(np.mean(img,axis=1))
+            dim_2 = self.minmax(np.mean(img,axis=2))
+
+        elif preprocess=='slice':
+            dimensions = img.shape
+            dim_0 = img[dimensions[0]//2,:,:]
+            dim_1 = img[:,dimensions[1]//2,:]
+            dim_2 = img[:,:,dimensions[2]//2,]
+        
+        if 'deface' in f:
+            label = 1
+        else:
+            label = 0
+
+        return [dim_0, dim_1, dim_2, label]
+
+
+    def _batch_read(self, files, preprocess=None):
         '''Reads MRI images batch by batch. All defaced images are identified by a "deface" in the file name.'''
 
         for f in files:
-            img = self.read_mri_image(f)
-            img = self.minmax(img)
+            mri = self.single_read(f, preprocess=preprocess)
 
-            if preprocess not in ['mean','slice']:
-                 raise Exception(' Preprocess has to be one of [mean, slice]!')
+            self.save_as_npz(f, *mri)
+        
 
-            if preprocess=='mean':            
-                dim_0 = self.minmax(np.mean(img,axis=0))
-                dim_1 = self.minmax(np.mean(img,axis=1))
-                dim_2 = self.minmax(np.mean(img,axis=2))
+    def load_save_images(self, save_path, preprocess):
+        '''Loads NIFTI files and saves it as compressed npz files for exponentially faster reads while training in the future'''
 
-            elif preprocess=='slice':
-                dimensions = img.shape
-                dim_0 = img[dimensions[0]//2,:,:]
-                dim_1 = img[:,dimensions[1]//2,:]
-                dim_2 = img[:,:,dimensions[2]//2,]
-            
-            if 'deface' in f:
-                label = 1
-            else:
-                label = 0
+        self.save_path = save_path
 
-            self.save_as_npz(f, dim_0, dim_1, dim_2, label)
-
-
-    def load_save_images(self):
+        if not os.path.exists(self.save_path):
+            os.makedirs(self.save_path)
 
         start = time.time()
 
@@ -92,11 +106,11 @@ class Dataset:
             if self.verbose == 1:
                 os.system('echo "Process Starting.."')
             if i+self.batch_size > len(self.mri_files):
-                self._batch_read(self.mri_files[i:], i, preprocess='slice')
+                self._batch_read(self.mri_files[i:], i, preprocess=preprocess)
                 if self.verbose == 1:
                     print(len(self.mri_files), " Done")
             else:
-                self._batch_read(self.mri_files[i:i+self.batch_size], i, preprocess='slice')
+                self._batch_read(self.mri_files[i:i+self.batch_size], i, preprocess=preprocess)
                 if self.verbose == 1:
                     print(i+self.batch_size, " Done")
                     
@@ -104,6 +118,7 @@ class Dataset:
         
 
     def save_as_npz(self, f, dim_0, dim_1, dim_2, label):
+        '''Saves the cross-sections along with the true label as a npz file'''
 
         f = f.split('/')[-1].replace('.nii.gz','.npz')
         savename = os.path.join(self.save_path, f)
@@ -136,6 +151,7 @@ class Generator:
 
 
     def load_npz(self,f):
+        '''Loads and parses a npz file'''
 
         data = np.load(os.path.join(self.path,f))
 
@@ -206,7 +222,8 @@ class Generator:
 
 
 
-    def keras_generator(self, batch_size = 16, train=True, augment=True, target_size=[(64,64)]):
+    def keras_generator(self, batch_size = 16, train=True, augment=True, target_size=[(32,32)]):
+
 
         while True:
             if train:
