@@ -6,7 +6,6 @@
 
 Using npm:
 
-
 ```
 npm install
 npm run watch
@@ -14,51 +13,69 @@ npm run watch
 
 Upload a `NIFTI` file to see results.
 
+Note : The existing model has been trained on the [IXI-Dataset](http://brain-development.org/ixi-dataset/), where [pydeface](https://github.com/poldracklab/pydeface) to create the corresponding defaced dataset.
+
 ## Build your own Detector
 
 The module has two components:
 
-- Deep Learning Component (python)
+- Deep Learning Model(python)
 - Deface Detector Tool (javascript)
 
-## Deep Learning Component
+### Deep Learning Model
 
-### Data Handling
+#### Dataset Preparation
 
 Dataset Structure : 
 
-Data
-+-- Undefaced
-|	+-- image1.nii.gz 
-|	+-- image2.nii.gz 
-|	+-- ..
-+-- Defaced
-|	+-- image3.nii.gz 
-|	+-- image4.nii.gz 
-|	+-- ..
+```
+Dataset
+│
+└───Undefaced
+│   │	image1.nii.gz 
+│   │	image2.nii.gz 
+│   │	...
+│
+└───Defaced
+    │	image3.nii.gz 
+    │	image4.nii.gz
+    │	...
+```
 
 The 3 Dimensional MRI data is preprocessed to obtain 3 crossections using one of Mean or Slice. Examples for each of the two are given below.
 
-### Mean
+##### Mean
 
-### Slice
+##### Slice
 
 For faster experimentation, the mri data is first cached as npz files.
 
 To do this run :
 
-`python load_dataset.py --load_path path/to/dataset1 path/to/dataset2 ..\
-						--save_path path/to/save/cache
-						--preprocess [Optional] mean/slice`
+```
+python load_dataset.py --load_path path/to/dataset1 path/to/dataset2 .. \
+		       --save_path path/to/save/cache \
+		       --preprocess [Optional] mean/slice
+```
 
 It is possible to keep appending more data as acquired to the cache by just running `load_dataset` using the same `save_path` again.
 
-The existing model is trained using the IXI-Dataset and pydeface to create the corresponding dataset.
-
-### Train the Model
+#### Train the Model
 
 To train the model :
 
-`python detector.py --load_path path/to/npz/files`
+```
+python detector.py --load_path path/to/npz/files \
+		   --export_js False
+```
 
 Set the `--export_js` flag to True for automatic conversion of the best model to a TensorFlowJS usable form.
+
+
+### Deface Detector Tool
+
+#### Port the Custom Model to Deface Detector
+
+- The TensorFlowJS model consists of the model structure in the form a JSON file and the weights as shards.
+- Copy all the components into the `/public` folder
+- Kick Start the detector!
