@@ -12,7 +12,7 @@ parser.add_argument("--preprocess", default='mean', help="Preprocess, one of sli
 args = parser.parse_args()
 
 load_paths = args.load_paths
-load_paths = ['../mri_data/IXI-Dataset/T1-Dataset', '../mri_data/IXI-Defaced/T1-Defaced']
+# load_paths = ['../mri_data/IXI-Dataset/T1-Dataset', '../mri_data/IXI-Defaced/T1-Defaced']
 
 preprocess = args.preprocess
 save_path = args.save_path
