@@ -42,11 +42,17 @@ Dataset
     │	...
 ```
 
-The 3 Dimensional MRI data is preprocessed to obtain 3 crossections using one of Mean or Slice. Examples for each of the two are given below.
+The three-dimensional MRI scan is preprocessed to obtain 3 two-dimensional crossections using one of mean or slice methods. Examples for each of the two are given below.
 
 ##### Mean
+Arithmetic Mean along each of the dimensions
+[! mean](assets/undefaced_mean.jpg)
 
 ##### Slice
+Center slice along each of the dimensions
+[! slice](assets/undefaced_slice.jpg)
+
+Note : The existing model uses mean preprocessing.
 
 For faster experimentation, the mri data is first cached as npz files.
 
