@@ -46,11 +46,11 @@ The three-dimensional MRI scan is preprocessed to obtain 3 two-dimensional cross
 
 ##### Mean
 Arithmetic mean along each of the dimensions
-[!mean](assets/undefaced_mean.jpg)
+![mean](assets/undefaced_mean.jpg)
 
 ##### Slice
 Center slice along each of the dimensions
-[!slice](assets/undefaced_slice.jpg)
+![slice](assets/undefaced_slice.jpg)
 
 Note : The existing model uses mean preprocessing.
 
