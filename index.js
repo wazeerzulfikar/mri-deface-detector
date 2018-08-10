@@ -8,7 +8,7 @@ var path = require('path')
 
 var Jimp = require('jimp')
 // var sharp = require('sharp');
-var pica = require('pica');
+// var pica = require('pica');
 
 
 var nifti = require('nifti-js')
@@ -45,7 +45,8 @@ function readFile(e) {
 		if (e.target.readyState== FileReader.DONE) {
 			if (!e.target.result) {
 				return;
-			} else {
+			}  
+			else {
 
 				// METHOD 1 - Using NIFTI-Reader-JS
 
@@ -79,21 +80,23 @@ function readFile(e) {
 				// console.log(check);
 
 				console.log(image)
+				var image = Array.prototype.slice.call(image)
 				var dims = await preprocess(image)
 				var dim_0 = dims[0]
 				var dim_1 = dims[1]
 				var dim_2 = dims[2]
 
-				// test(dim_0, dim_1, dim_2,1);
+				test(dim_0, dim_1, dim_2,1);
+				// console.log(dim_0.flatten().tolist())
 
-					var dim_0_32 = nj.float64(resize(dim_0, 32, 32));
-				var dim_1_32 = nj.float64(resize(dim_1, 32, 32));
-					var dim_2_32 = nj.float64(resize(dim_2, 32, 32));
+				// var dim_0_32 = nj.float64(resize(dim_0, 32, 32));
+				// var dim_1_32 = nj.float64(resize(dim_1, 32, 32));
+				// var dim_2_32 = nj.float64(resize(dim_2, 32, 32));
 			}
 		}
 	};
 
-	reader.readAsArrayBuffer(file);
+	reader.readAsBinaryString(file);
 
 }
 
@@ -101,9 +104,7 @@ function readFile(e) {
 async function preprocess(contents) {
 	// Main function for preprocessing the contents of the NIFTI file, before feeding to model
 
-	var njarray = nj.array(contents);
-	console.log('rodcut')
-
+	var njarray = nj.uint8(contents);
 
 	var dimensions = [256, 256, 150];
 
@@ -126,6 +127,8 @@ async function preprocess(contents) {
 	var dim = njarray.pick(128,null,null)
 
 	// console.log(dim);
+	// console.log(dim.flatten());
+
 	dims.push(dim)
 	var dim = njarray.pick(null,128,null)
 
@@ -169,16 +172,12 @@ function resize(img_data, target_height, target_width) {
 			
 		}
 
-
 		image.getBase64(Jimp.MIME_JPEG, function (err, src) {
         const img = document.createElement('img');
         img.setAttribute('src', src);
         document.body.appendChild(img)});
 
-
-        image.resize(target_height,target_width);
-
-		
+        image.resize(target_height,target_width);	
 	});
 
 	var i = 0;
@@ -230,8 +229,6 @@ async function test(dim_0, dim_1, dim_2, label) {
 	console.log(prediction)
 	statusElement.innerText = `Prediction : ${prediction} , Actual : ${label}`;
 
-
-
 }
 
 async function main() {
@@ -245,13 +242,12 @@ async function main() {
 
 	// await resize();
 
-	var dims = await preprocess(data.image)
-	var dim_0 = dims[0]
-	var dim_1 = dims[1]
-	var dim_2 = dims[2]
+	// var dims = await preprocess(data.image)
+	// var dim_0 = dims[0]
+	// var dim_1 = dims[1]
+	// var dim_2 = dims[2]
 
-	test(dim_0, dim_1, dim_2, data.label);
-
+	// test(dim_0, dim_1, dim_2, data.label);
 
 }
 
