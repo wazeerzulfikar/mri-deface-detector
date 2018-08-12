@@ -1,6 +1,8 @@
 # MRI Deface Detector
 
-[WIP] A deployable JS tool using Deep Learning to detect if defacing has been done on MRI Scans.
+The de-identification of Brain MRI (Magnetic Resonance Imaging) scans, which is an important ethical step while publicly sharing datasets, is called defacing. Defacing involves removing or masking the part of the image corresponding to the face, while simultaneously ensuring brain data is not lost in the process.
+
+This javascript tool intends to serve a trained deep learning model to do the job of detecting deface in an MRI scan quickly and efficiently. The tool will be easy to integrate into automatic validators such as the [BIDS Validator](https://github.com/INCF/bids-validator).
 
 ## How to Run the Detector on your Browser
 
@@ -14,6 +16,10 @@ npm run watch
 Upload a `NIFTI` file to see results.
 
 Note : The existing model has been trained on the [IXI-Dataset](http://brain-development.org/ixi-dataset/), where [pydeface](https://github.com/poldracklab/pydeface) to create the corresponding defaced dataset.
+
+## How to Run the Detector using Command Line
+
+Coming Soon!
 
 ## Build your own Detector
 
@@ -54,19 +60,19 @@ Center slice along each of the dimensions
 
 ![slice](assets/undefaced_slice.jpg)
 
-Note : The existing model uses mean preprocessing.
+Note : The existing model uses `mean` preprocessing. The reasoning behind this is that the mean blurs out the intricate details of the neural parts, thus allowing the model to give emphasis to the actual shape of the structure, which is essential for deface detection.
 
-For faster experimentation, the mri data is first cached as npz files.
+For faster experimentation, the mri data is first stored as numpy(npz) files.
 
 To do this run :
 
 ```
 python load_dataset.py --load_path path/to/dataset1 path/to/dataset2 .. \
-		       --save_path path/to/save/cache \
+		       --save_path path/to/save/npz/files \
 		       --preprocess [Optional] mean/slice
 ```
 
-It is possible to keep appending more data as acquired to the cache by just running `load_dataset` using the same `save_path` again.
+As this step takes substantial time due to big sizes of MRI scans, the script allows you keep appending more data as acquired to the numpy storage by just running `load_dataset` using the same `save_path` repeatedly.
 
 #### Train the Model
 
@@ -74,16 +80,39 @@ To train the model :
 
 ```
 python detector.py --load_path path/to/npz/files \
+		   --augment_images False \
 		   --export_js False
 ```
 
+##### Export to JS
 Set the `--export_js` flag to True for automatic conversion of the best model to a TensorFlowJS usable form.
 
+##### Augmentations
+Set the `--augment_images` to True to augment images, while training, using the transformations below:
+- Gaussian Blur
+- Contrast Normalization
+- Multiply
+- Flips
+- Rotations
+
+##### Model Architecture
+The figure below represents the simplified model architecture:
+
+![Model Architecture](assets/model_architecture.png)
+
+Note : The weight sharing and elementwise addition features were used specifically to ensure the independence of model performance on the order in which the cross-sections are passed to the model, thus making it more robust.
 
 ### Deface Detector Tool
 
 #### Port the Custom Model to Deface Detector
 
-- The TensorFlowJS model consists of the model structure in the form a JSON file and the weights as shards.
-- Copy all the components into the `/public` folder
+- The TensorFlowJS model consists of the model structure in the form a JSON file and the weights as shards saved in a `model_js` directory.
+- Copy `model_js` into the `/public` folder
 - Kick Start the detector!
+
+## Next Steps
+
+- Fix the NIFTI file read, which is corrupted right now.
+- Implement mean preprocessing in javascript detector tool. 
+- Make integratable into other validators.
+- Run as a Node app
