@@ -37,7 +37,7 @@ Dataset Structure :
 ```
 Dataset
 │
-└───Undefaced
+└───Original
 │   │	image1.nii.gz 
 │   │	image2.nii.gz 
 │   │	...
