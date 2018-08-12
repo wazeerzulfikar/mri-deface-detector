@@ -17,6 +17,9 @@ class Dataset:
         self.verbose = verbose
         self.batch_size = batch_size
 
+        if not type(self.paths)==list:
+            self.paths = [self.paths]
+
         for path in self.paths:
             if not os.path.exists(path):
                 raise Exception('"{}" does not exist!'.format(path))
@@ -46,13 +49,14 @@ class Dataset:
 
     def minmax(self, img):
         '''MinMax normalization of image'''
+
         return (img/(np.max(img)-np.min(img)))*255
 
-    @staticmethod
+
     def single_read(self, f, preprocess=None):
         '''Reads a single NIFTI image, preprocesses it and returns the cross-sections'''
 
-        if preprocess not in ['mean','slice']:
+        if preprocess.lower() not in ['mean','slice']:
             raise Exception(' Preprocess has to be one of [mean, slice]!')
 
         img = self.read_mri_image(f)
@@ -69,7 +73,7 @@ class Dataset:
             dim_1 = img[:,dimensions[1]//2,:]
             dim_2 = img[:,:,dimensions[2]//2,]
         
-        if 'deface' in f:
+        if 'Defaced' in f:
             label = 1
         else:
             label = 0
@@ -106,11 +110,11 @@ class Dataset:
             if self.verbose == 1:
                 os.system('echo "Process Starting.."')
             if i+self.batch_size > len(self.mri_files):
-                self._batch_read(self.mri_files[i:], i, preprocess=preprocess)
+                self._batch_read(self.mri_files[i:], preprocess=preprocess)
                 if self.verbose == 1:
                     print(len(self.mri_files), " Done")
             else:
-                self._batch_read(self.mri_files[i:i+self.batch_size], i, preprocess=preprocess)
+                self._batch_read(self.mri_files[i:i+self.batch_size], preprocess=preprocess)
                 if self.verbose == 1:
                     print(i+self.batch_size, " Done")
                     
@@ -223,7 +227,6 @@ class Generator:
 
 
     def keras_generator(self, batch_size = 16, train=True, augment=True, target_size=[(32,32)]):
-
 
         while True:
             if train:
