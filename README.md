@@ -15,8 +15,6 @@ npm run watch
 
 Upload a `NIFTI` file to see results.
 
-Note : The existing model has been trained on the [IXI-Dataset](http://brain-development.org/ixi-dataset/), where [pydeface](https://github.com/poldracklab/pydeface) to create the corresponding defaced dataset.
-
 ## How to Run the Detector using Command Line
 
 Coming Soon!
@@ -32,7 +30,9 @@ The module has two components:
 
 #### Dataset Preparation
 
-Dataset Structure : 
+The existing model has been trained on the [IXI-Dataset](http://brain-development.org/ixi-dataset/), which would formulate the `Original` dataset. To create the defaced dataset, a defacing tool such as [pydeface](https://github.com/poldracklab/pydeface) was used to create the corresponding defaced dataset. Another popular defacing tool which can be used to add variabality is [mri_deface](https://surfer.nmr.mgh.harvard.edu/fswiki/mri_deface).
+
+The Dataset should be structured in the following way : 
 
 ```
 Dataset
