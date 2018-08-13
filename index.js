@@ -1,21 +1,16 @@
-var http = require('http');
 const tf = require('@tensorflow/tfjs');
 
-const data = require('./public/data/mri_full_uint8.json')
+// Only for debugging purposes locally
+// const data = require('./public/data/mri_full_uint8.json')
 const data_64 = require('./public/data/mri_64.json')
 
 var path = require('path')
 
 var Jimp = require('jimp')
-// var sharp = require('sharp');
-// var pica = require('pica');
-
 
 var nifti = require('nifti-js')
 var niftijs = require('nifti-reader-js')
 var pako = require('pako')
-var ndarray = require('ndarray')
-var math = require('mathjs')
 var nj = require('numjs')
 
 let model;
@@ -23,9 +18,7 @@ let model;
 const messageElement = document.getElementById('message');
 const statusElement = document.getElementById('status')
 
-
 // statusElement.innerText = data.dim_0.length -1
-
 
 async function loadModel(file, callback) {
 	model = await tf.loadModel(path.join('model','model.json'));
@@ -50,27 +43,32 @@ function readFile(e) {
 
 				// METHOD 1 - Using NIFTI-Reader-JS
 
-				// var file = e.target.result;
-				// if (niftijs.isCompressed(file)) {
-				// 	file = niftijs.decompress(file);
-				// }
+				var file = e.target.result;
+				if (niftijs.isCompressed(file)) {
+					file = niftijs.decompress(file);
+					console.log('decompress')
+				}
 
-				// if (niftijs.isNIFTI(file)) {
-				// 	var niftiHeader = niftijs.readHeader(file);
-				// 	var image = niftijs.readImage(niftiHeader,file);
-				// }
+				if (niftijs.isNIFTI(file)) {
+					var niftiHeader = niftijs.readHeader(file);
+					console.log(niftiHeader.dims)
+					var image = niftijs.readImage(niftiHeader,file);
+				}
 
 				// // Check if contents are correct using sum of pixels
+				// console.log(new DataView(image))
 
-				// var check = new Uint8Array(image)
-				// console.log(check.reduce((a,b)=>a+b,0));
+				var image = new Int16Array(image)
+				console.log(image)
+
+				console.log(image.reduce((a,b)=>a+b,0));
 
 
 				//  METHOD 2 - Using NIFTI-JS
 
-				var unzipped = pako.inflate(e.target.result);
-				var contents = nifti.parse(unzipped);
-				var image = contents.data
+				// var unzipped = pako.inflate(e.target.result);
+				// var contents = nifti.parse(unzipped);
+				// var image = contents.data
 				// console.log(contents)
 
 				// Check if contents are correct using sum of pixels
@@ -78,25 +76,27 @@ function readFile(e) {
 				// var check = new int16Array(contents.data)
 				// const uniqueValues = [...new Set(check)]; 
 				// console.log(check);
+				// console.log(image)
 
-				console.log(image)
-				var image = Array.prototype.slice.call(image)
+
+				// var image = new Uint8Array(Array.prototype.slice.call(image))
+				// console.log(image)
+				// console.log(data.image)
+				// console.log(image.reduce((a,b)=>a+b,0));
+				// console.log(data.image.reduce((a,b)=>a+b,0));
+
+
 				var dims = await preprocess(image)
 				var dim_0 = dims[0]
 				var dim_1 = dims[1]
 				var dim_2 = dims[2]
 
 				test(dim_0, dim_1, dim_2,1);
-				// console.log(dim_0.flatten().tolist())
-
-				// var dim_0_32 = nj.float64(resize(dim_0, 32, 32));
-				// var dim_1_32 = nj.float64(resize(dim_1, 32, 32));
-				// var dim_2_32 = nj.float64(resize(dim_2, 32, 32));
 			}
 		}
 	};
 
-	reader.readAsBinaryString(file);
+	reader.readAsArrayBuffer(file);
 
 }
 
@@ -252,7 +252,3 @@ async function main() {
 }
 
 main();
-
-
-
-
