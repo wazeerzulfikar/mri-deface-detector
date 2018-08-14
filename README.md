@@ -4,6 +4,10 @@ The de-identification of Brain MRI (Magnetic Resonance Imaging) scans, which is 
 
 This javascript tool intends to serve a trained deep learning model to do the job of detecting deface in an MRI scan quickly and efficiently. The tool will be easy to integrate into automatic validators such as the [BIDS Validator](https://github.com/INCF/bids-validator).
 
+## Requirements
+- Node>=8.9.0
+- Python3 (For training custom model)
+
 ## How to Run the Detector on your Browser
 
 Using npm:
