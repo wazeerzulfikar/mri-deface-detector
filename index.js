@@ -76,12 +76,9 @@ function readFile(e) {
 
 				// var image = new Uint8Array(Array.prototype.slice.call(image))
 
-				var dims = await preprocess(image, dimensions)
-				var dim_0 = dims[0]
-				var dim_1 = dims[1]
-				var dim_2 = dims[2]
+				var slices = await preprocess(image, dimensions)
 
-				test(dim_0, dim_1, dim_2,1);
+				test(...slices);
 			}
 		}
 	};
@@ -100,18 +97,18 @@ async function preprocess(contents, dimensions) {
 
 	img = img.reshape(dimensions);
 
-	var dims = []
+	var slices = []
 
 	var key = [null, null, null]
 
 	for (var i=0;i<dimensions.length;i++) {
 		var key = [null, null, null]
 		key[i] = dimensions[i]/2;
-		var dim = img.pick(...key)
-		dims.push(dim.T)
+		var slice = img.pick(...key)
+		slices.push(slice.T)
 	}
 
-	return dims
+	return slices
 }
 
 
@@ -124,18 +121,16 @@ function resize(img_data, target_height, target_width) {
 	var height = img_data.shape[1]
 	img_data = img_data.flatten().tolist();
 
-	var cross = new Jimp(height,width, function (err, image) {
+	var resized = new Jimp(height,width, function (err, image) {
 
 		let buffer = image.bitmap.data
 		var i = 0;
 		for(var x=0; x<height*width*4;x+=4) {
-			// const offset = (y*width+x)*4;
 			buffer[x] = img_data[i];
 			buffer[x+1] = img_data[i];
 			buffer[x+2] = img_data[i];
 			buffer[x+3] = 255;
 			i++;
-			
 		}
 
 		image.getBase64(Jimp.MIME_JPEG, function (err, src) {
@@ -149,7 +144,7 @@ function resize(img_data, target_height, target_width) {
 	var i = 0;
 	let resized_image_data = new Float64Array(target_height*target_width);
     for(var x=0; x<height*width*4;x+=4) {
-		resized_image_data[i] = cross.bitmap.data[x];
+		resized_image_data[i] = resized.bitmap.data[x];
 		i++;
 		
 	}
@@ -158,27 +153,33 @@ function resize(img_data, target_height, target_width) {
 }
 
 
-async function test(dim_0, dim_1, dim_2, label) {
+async function test(slice_0, slice_1, slice_2, label) {
 	// Function to test the model with given mri model
 
-	var dim_0_32 = nj.float64(resize(dim_0, 32, 32));
-	var dim_1_32 = nj.float64(resize(dim_1, 32, 32));
-	var dim_2_32 = nj.float64(resize(dim_2, 32, 32));
+	var slice_0 = nj.float64(resize(slice_0, 32, 32));
+	var slice_1 = nj.float64(resize(slice_1, 32, 32));
+	var slice_2 = nj.float64(resize(slice_2, 32, 32));
 
-	dim_0_32 = nj.divide(dim_0_32,255);
-	dim_1_32 = nj.divide(dim_1_32,255);
-	dim_2_32 = nj.divide(dim_2_32,255);
+	slice_0 = nj.divide(slice_0,255);
+	slice_1 = nj.divide(slice_1,255);
+	slice_2 = nj.divide(slice_2,255);
 
-	var dim_0 = await tf.tensor4d(dim_0_32.flatten().tolist(), [1,32,32,1]);
-	var dim_1 = await tf.tensor4d(dim_1_32.flatten().tolist(), [1,32,32,1]);
-	var dim_2 = await tf.tensor4d(dim_2_32.flatten().tolist(), [1,32,32,1]);
+	var slice_0 = await tf.tensor4d(slice_0.flatten().tolist(), [1,32,32,1]);
+	var slice_1 = await tf.tensor4d(slice_1.flatten().tolist(), [1,32,32,1]);
+	var slice_2 = await tf.tensor4d(slice_2.flatten().tolist(), [1,32,32,1]);
 
-	var dims = [dim_0, dim_1, dim_2];
+	var slices = [slice_0, slice_1, slice_2];
 
-	var prediction = model.predict(dims);
+	var prediction = model.predict(slices);
 	console.log('Prediction : '+prediction)
-	statusElement.innerText = `Prediction : ${prediction} , Actual : ${label}`;
 
+	var status = `Prediction : ${prediction} `;
+
+	if (label!=undefined){
+		status += `Actual : ${label}`;
+	}
+
+	statusElement.innerText = status;
 }
 
 async function main() {
@@ -189,15 +190,6 @@ async function main() {
 	await loadModel('models/model.json', (model) => {
 		messageElement.innerText = 'Model Has Been Loaded';
 		})
-
-	// await resize();
-
-	// var dims = await preprocess(data.image)
-	// var dim_0 = dims[0]
-	// var dim_1 = dims[1]
-	// var dim_2 = dims[2]
-
-	// test(dim_0, dim_1, dim_2, data.label);
 
 }
 
