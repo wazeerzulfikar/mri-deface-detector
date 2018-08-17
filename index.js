@@ -25,6 +25,7 @@ async function loadModel(file, callback) {
 	callback(model);
 }
 
+
 function readFile(e) {
 
 	file = e.target.files[0];
@@ -51,12 +52,10 @@ function readFile(e) {
 
 				if (niftijs.isNIFTI(file)) {
 					var niftiHeader = niftijs.readHeader(file);
-					console.log(niftiHeader.dims)
+					var dimensions = niftiHeader.dims.slice(1,4).reverse();
+					console.log('Dimensions : '+dimensions)
 					var image = niftijs.readImage(niftiHeader,file);
 				}
-
-				// // Check if contents are correct using sum of pixels
-				// console.log(new DataView(image))
 
 				var image = new Int16Array(image)
 
@@ -68,24 +67,16 @@ function readFile(e) {
 				// var unzipped = pako.inflate(e.target.result);
 				// var contents = nifti.parse(unzipped);
 				// var image = contents.data
-				// console.log(contents)
 
 				// Check if contents are correct using sum of pixels
 
 				// var check = new int16Array(contents.data)
 				// const uniqueValues = [...new Set(check)]; 
-				// console.log(check);
-				// console.log(image)
-
 
 				// var image = new Uint8Array(Array.prototype.slice.call(image))
-				// console.log(image)
-				// console.log(data.image)
-				// console.log(image.reduce((a,b)=>a+b,0));
-				// console.log(data.image.reduce((a,b)=>a+b,0));
 
 
-				var dims = await preprocess(image)
+				var dims = await preprocess(image, dimensions)
 				var dim_0 = dims[0]
 				var dim_1 = dims[1]
 				var dim_2 = dims[2]
@@ -100,7 +91,7 @@ function readFile(e) {
 }
 
 
-async function preprocess(contents) {
+async function preprocess(contents, dimensions) {
 	// Main function for preprocessing the contents of the NIFTI file, before feeding to model
 
 	var njarray = nj.float64(contents);
@@ -109,52 +100,25 @@ async function preprocess(contents) {
 
 	var image = new Uint8Array(Array.prototype.slice.call(njarray))
 
-	// console.log('The actual checksum')
-
-	// console.log(image.reduce((a,b)=>a+b,0));
-
-	var dimensions = [150, 256, 256];
-
 	njarray = njarray.reshape(dimensions);
-
-	// console.log('Reshape Done')
 
 	var dims = []
 
 	var key = [null, null, null]
 
-	// for (var i=0;i<dimensions.length;i++) {
-	// 	var key = [null, null, null]
-	// 	key[i] = dim/2;
-	// 	var dim = njarray.pick(key)
-	// 	console.log(dim);
-	// 	dims.push(dim)
-	// }
-	var dim = njarray.pick(75,null,null)
-
-	// console.log(dim);
-	// console.log(dim.flatten());
-
-	dims.push(dim.T)
-	var dim = njarray.pick(null,127,null)
-
-	// console.log(dim);
-	dims.push(dim.T)
-	var dim = njarray.pick(null,null,127)
-
-	// console.log(dim);
-	dims.push(dim.T)
-
+	for (var i=0;i<dimensions.length;i++) {
+		var key = [null, null, null]
+		key[i] = dimensions[i]/2;
+		var dim = njarray.pick(...key)
+		dims.push(dim.T)
+	}
 
 	return dims
-
 }
 
 
 function resize(img_data, target_height, target_width) {
 	// Function for  resizing of image.
-
-	// var image_data = img.selection.data;
 
 	var width = img_data.shape[0]
 	var height = img_data.shape[1]
@@ -162,7 +126,6 @@ function resize(img_data, target_height, target_width) {
 
 	console.log(height)
 	console.log(width)
-	console.log('Before copying')
 
 	var cross = new Jimp(height,width, function (err, image) {
 
@@ -193,23 +156,13 @@ function resize(img_data, target_height, target_width) {
 		i++;
 		
 	}
-		// console.log(resized_image_data.reduce((a,b)=>a+b,0));
-
 
     return resized_image_data;
-	
-	// const uniqueValues = [...new Set(cross.bitmap.data)]; 
-
-	// console.log(uniqueValues)
-	
-	
 }
 
 
 async function test(dim_0, dim_1, dim_2, label) {
-
 	// Function to test the model with given mri model
-
 
 	var dim_0_32 = nj.float64(resize(dim_0, 32, 32));
 	var dim_1_32 = nj.float64(resize(dim_1, 32, 32));
@@ -218,12 +171,6 @@ async function test(dim_0, dim_1, dim_2, label) {
 	dim_0_32 = nj.divide(dim_0_32,255);
 	dim_1_32 = nj.divide(dim_1_32,255);
 	dim_2_32 = nj.divide(dim_2_32,255);
-
-	console.log(dim_0_32.flatten().tolist().reduce((a,b)=>a+b,0));
-	console.log(dim_1_32.flatten().tolist().reduce((a,b)=>a+b,0));
-	console.log(dim_2_32.flatten().tolist().reduce((a,b)=>a+b,0));
-
-
 
 	var dim_0 = await tf.tensor4d(dim_0_32.flatten().tolist(), [1,32,32,1]);
 	var dim_1 = await tf.tensor4d(dim_1_32.flatten().tolist(), [1,32,32,1]);
