@@ -59,7 +59,6 @@ function readFile(e) {
 				// console.log(new DataView(image))
 
 				var image = new Int16Array(image)
-				console.log(image)
 
 				console.log(image.reduce((a,b)=>a+b,0));
 
@@ -104,14 +103,21 @@ function readFile(e) {
 async function preprocess(contents) {
 	// Main function for preprocessing the contents of the NIFTI file, before feeding to model
 
-	var njarray = nj.uint8(contents);
+	var njarray = nj.float64(contents);
 
-	var dimensions = [256, 256, 150];
+	njarray = nj.uint8(nj.multiply(nj.divide(njarray, njarray.max()-njarray.min()),255));
+
+	var image = new Uint8Array(Array.prototype.slice.call(njarray))
+
+	// console.log('The actual checksum')
+
+	// console.log(image.reduce((a,b)=>a+b,0));
+
+	var dimensions = [150, 256, 256];
 
 	njarray = njarray.reshape(dimensions);
 
-	console.log('Reshape Done')
-
+	// console.log('Reshape Done')
 
 	var dims = []
 
@@ -124,20 +130,20 @@ async function preprocess(contents) {
 	// 	console.log(dim);
 	// 	dims.push(dim)
 	// }
-	var dim = njarray.pick(128,null,null)
+	var dim = njarray.pick(75,null,null)
 
 	// console.log(dim);
 	// console.log(dim.flatten());
 
-	dims.push(dim)
-	var dim = njarray.pick(null,128,null)
+	dims.push(dim.T)
+	var dim = njarray.pick(null,127,null)
 
 	// console.log(dim);
-	dims.push(dim)
-	var dim = njarray.pick(null,null,75)
+	dims.push(dim.T)
+	var dim = njarray.pick(null,null,127)
 
 	// console.log(dim);
-	dims.push(dim)
+	dims.push(dim.T)
 
 
 	return dims
@@ -187,7 +193,7 @@ function resize(img_data, target_height, target_width) {
 		i++;
 		
 	}
-		console.log(resized_image_data.reduce((a,b)=>a+b,0));
+		// console.log(resized_image_data.reduce((a,b)=>a+b,0));
 
 
     return resized_image_data;
@@ -209,9 +215,9 @@ async function test(dim_0, dim_1, dim_2, label) {
 	var dim_1_32 = nj.float64(resize(dim_1, 32, 32));
 	var dim_2_32 = nj.float64(resize(dim_2, 32, 32));
 
-	dim_0_32 = dim_0_32.divide(255);
-	dim_1_32 = dim_1_32.divide(255);
-	dim_2_32 = dim_2_32.divide(255);
+	dim_0_32 = nj.divide(dim_0_32,255);
+	dim_1_32 = nj.divide(dim_1_32,255);
+	dim_2_32 = nj.divide(dim_2_32,255);
 
 	console.log(dim_0_32.flatten().tolist().reduce((a,b)=>a+b,0));
 	console.log(dim_1_32.flatten().tolist().reduce((a,b)=>a+b,0));
