@@ -59,7 +59,8 @@ function readFile(e) {
 
 				var image = new Int16Array(image)
 
-				console.log(image.reduce((a,b)=>a+b,0));
+				// CheckSum
+				// console.log(image.reduce((a,b)=>a+b,0));
 
 
 				//  METHOD 2 - Using NIFTI-JS
@@ -74,7 +75,6 @@ function readFile(e) {
 				// const uniqueValues = [...new Set(check)]; 
 
 				// var image = new Uint8Array(Array.prototype.slice.call(image))
-
 
 				var dims = await preprocess(image, dimensions)
 				var dim_0 = dims[0]
@@ -94,13 +94,11 @@ function readFile(e) {
 async function preprocess(contents, dimensions) {
 	// Main function for preprocessing the contents of the NIFTI file, before feeding to model
 
-	var njarray = nj.float64(contents);
+	var img = nj.float64(contents);
 
-	njarray = nj.uint8(nj.multiply(nj.divide(njarray, njarray.max()-njarray.min()),255));
+	img = nj.uint8(nj.multiply(nj.divide(img, img.max()-img.min()),255));
 
-	var image = new Uint8Array(Array.prototype.slice.call(njarray))
-
-	njarray = njarray.reshape(dimensions);
+	img = img.reshape(dimensions);
 
 	var dims = []
 
@@ -109,7 +107,7 @@ async function preprocess(contents, dimensions) {
 	for (var i=0;i<dimensions.length;i++) {
 		var key = [null, null, null]
 		key[i] = dimensions[i]/2;
-		var dim = njarray.pick(...key)
+		var dim = img.pick(...key)
 		dims.push(dim.T)
 	}
 
@@ -120,12 +118,11 @@ async function preprocess(contents, dimensions) {
 function resize(img_data, target_height, target_width) {
 	// Function for  resizing of image.
 
+	console.log('Resizing..')
+
 	var width = img_data.shape[0]
 	var height = img_data.shape[1]
 	img_data = img_data.flatten().tolist();
-
-	console.log(height)
-	console.log(width)
 
 	var cross = new Jimp(height,width, function (err, image) {
 
@@ -179,7 +176,7 @@ async function test(dim_0, dim_1, dim_2, label) {
 	var dims = [dim_0, dim_1, dim_2];
 
 	var prediction = model.predict(dims);
-	console.log(prediction)
+	console.log('Prediction : '+prediction)
 	statusElement.innerText = `Prediction : ${prediction} , Actual : ${label}`;
 
 }
