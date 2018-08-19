@@ -16,15 +16,20 @@ var nj = require('numjs')
 let model;
 
 const messageElement = document.getElementById('message');
-const statusElement = document.getElementById('status')
+const statusElement = document.getElementById('status');
+const imageElement = document.getElementById('images');
 
-// statusElement.innerText = data.dim_0.length -1
 
 async function loadModel(file, callback) {
 	model = await tf.loadModel(path.join('model','model.json'));
 	callback(model);
 }
 
+function clearElement(element){
+	while (element.firstChild) {
+    	element.removeChild(element.firstChild);
+	}
+}
 
 function readFile(e) {
 
@@ -41,23 +46,28 @@ function readFile(e) {
 				return;
 			}  
 			else {
+				clearElement(imageElement);
+				clearElement(statusElement);
 
 				// METHOD 1 - Using NIFTI-Reader-JS
 
 				var file = e.target.result;
 				if (niftijs.isCompressed(file)) {
 					file = niftijs.decompress(file);
-					console.log('decompress')
+					console.log('Decompressed')
 				}
 
 				if (niftijs.isNIFTI(file)) {
 					var niftiHeader = niftijs.readHeader(file);
 					var dimensions = niftiHeader.dims.slice(1,4).reverse();
-					console.log('Dimensions : '+dimensions)
+					console.log('Dimensions : '+dimensions);
 					var image = niftijs.readImage(niftiHeader,file);
+				} else {
+					statusElement.innerText = `Error! Please provide a valid NIFTI file.`;
+					return;
 				}
 
-				var image = new Int16Array(image)
+				var image = new Int16Array(image);
 
 				// CheckSum
 				// console.log(image.reduce((a,b)=>a+b,0));
@@ -136,7 +146,7 @@ function resize(img_data, target_height, target_width) {
 		image.getBase64(Jimp.MIME_JPEG, function (err, src) {
         const img = document.createElement('img');
         img.setAttribute('src', src);
-        document.body.appendChild(img)});
+        imageElement.appendChild(img)});
 
         image.resize(target_height,target_width);	
 	});
@@ -171,15 +181,24 @@ async function test(slice_0, slice_1, slice_2, label) {
 	var slices = [slice_0, slice_1, slice_2];
 
 	var prediction = model.predict(slices);
-	console.log('Prediction : '+prediction)
+	prediction.data().then(function(result){
 
-	var status = `Prediction : ${prediction} `;
+		console.log('Prediction : '+result);
 
-	if (label!=undefined){
-		status += `Actual : ${label}`;
-	}
+		var status = `Prediction : ${result[0].toFixed(2)} `;
+		if (label!=undefined){
+			status += `Actual : ${label}`;
+		}
+		statusElement.innerText = status;
+		statusElement.innerText +='\n'
 
-	statusElement.innerText = status;
+		if(result[0]<0.5){
+			statusElement.innerText += ' It has been defaced.'
+		} else{
+			statusElement.innerText += ' It has NOT been defaced.'
+		}
+	});
+	
 }
 
 async function main() {
@@ -188,7 +207,7 @@ async function main() {
 	inputElement.addEventListener('change', readFile, false);
 
 	await loadModel('models/model.json', (model) => {
-		messageElement.innerText = 'Model Has Been Loaded';
+		console.log('Model Has Been Loaded');
 		})
 
 }
