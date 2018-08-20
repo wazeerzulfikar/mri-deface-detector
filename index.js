@@ -19,7 +19,6 @@ const messageElement = document.getElementById('message');
 const statusElement = document.getElementById('status');
 const imageElement = document.getElementById('images');
 
-
 async function loadModel(filename, callback) {
 	model = await tf.loadModel(filename);
 	callback(model);
@@ -87,7 +86,7 @@ function readFile(e) {
 
 				// var image = new Uint8Array(Array.prototype.slice.call(image))
 
-				var slices = await preprocess(image, dimensions);
+				var slices = await preprocess(image, dimensions, 'slice');
 
 				test(...slices);
 			}
@@ -95,17 +94,32 @@ function readFile(e) {
 	};
 
 	reader.readAsArrayBuffer(file);
-
 }
 
+function axisMean(img, dimensions, axis) {
+	// Arithmetic Mean along specified axis
 
-async function preprocess(contents, dimensions) {
-	// Main function for preprocessing the contents of the NIFTI file, before feeding to model
+	axes = [0,1,2];
+	axes.splice(axis, 1);
 
-	var img = nj.float64(contents);
-	// img = img.slice([null,null,2])
+	var slice = [];
 
+	for(var i=0;i<dimensions[axes[0]];i++){
+
+		for(var j=0;j<dimensions[axes[1]];j++) {
+			key = [null,null,null];
+			key[axes[0]]=i;
+			key[axes[1]]=j;
+			slice.push(img.pick(...key).mean())
+		}
+	}
+
+	return nj.float64(slice).reshape([dimensions[axes[0]],dimensions[axes[1]]]);
+}
+
+function minmaxNormalize(img) {
 	// MinMax Normalization to 0-255 scale
+
 	var max_val = img.max();
 	var min_val = img.min();
 	img = nj.divide(img, max_val-min_val);
@@ -114,19 +128,37 @@ async function preprocess(contents, dimensions) {
 		img = nj.add(img,127.5);
 	}
 
+	return img
+}
+
+
+async function preprocess(contents, dimensions, preprocess_method) {
+	// Main function for preprocessing the contents of the NIFTI file, before feeding to model
+
+	var img = nj.float64(contents);
+
+	img = minmaxNormalize(img);
+
 	img = nj.uint8(img.reshape(dimensions));
 
-	var slices = []
+	var slices = [];
 
-	var key = [null, null, null]
+	if (preprocess_method=='slice') {
+		for (var i=0;i<dimensions.length;i++) {
+			var key = [null, null, null];
+			key[i] = dimensions[i]/2;
+			var slice = img.pick(...key);
+			slices.push(slice.T);
+		}
+	} 
+	else if (preprocess_method=='mean') {
+		for (var i=0;i<dimensions.length;i++) {
+			slice = axisMean(img, dimensions, i).T;
+			slices.push(minmaxNormalize(slice));
+		}	
 
-	for (var i=0;i<dimensions.length;i++) {
-		var key = [null, null, null]
-		key[i] = dimensions[i]/2;
-		var slice = img.pick(...key)
-		slices.push(slice.T)
 	}
-
+	
 	return slices
 }
 
