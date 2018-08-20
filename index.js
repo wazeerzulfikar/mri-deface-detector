@@ -46,6 +46,7 @@ function readFile(e) {
 				return;
 			}  
 			else {
+
 				clearElement(imageElement);
 				clearElement(statusElement);
 
@@ -66,7 +67,7 @@ function readFile(e) {
 					statusElement.innerText = `Error! Please provide a valid NIFTI file.`;
 					return;
 				}
-
+				
 				var image = new Int16Array(image);
 
 				// CheckSum
@@ -103,7 +104,14 @@ async function preprocess(contents, dimensions) {
 
 	var img = nj.float64(contents);
 
-	img = nj.uint8(nj.multiply(nj.divide(img, img.max()-img.min()),255));
+	// MinMax Normalization to 0-255 scale
+	var max_val = img.max();
+	var min_val = img.min();
+	img = nj.divide(img, max_val-min_val);
+	img = nj.multiply(img,255);
+	if(min_val<0) {
+		img = nj.add(img,127.5);
+	}
 
 	img = img.reshape(dimensions);
 
