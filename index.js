@@ -20,8 +20,8 @@ const statusElement = document.getElementById('status');
 const imageElement = document.getElementById('images');
 
 
-async function loadModel(file, callback) {
-	model = await tf.loadModel(path.join('model','model.json'));
+async function loadModel(filename, callback) {
+	model = await tf.loadModel(filename);
 	callback(model);
 }
 
@@ -67,7 +67,7 @@ function readFile(e) {
 					statusElement.innerText = `Error! Please provide a valid NIFTI file.`;
 					return;
 				}
-				
+
 				var image = new Int16Array(image);
 
 				// CheckSum
@@ -87,7 +87,7 @@ function readFile(e) {
 
 				// var image = new Uint8Array(Array.prototype.slice.call(image))
 
-				var slices = await preprocess(image, dimensions)
+				var slices = await preprocess(image, dimensions);
 
 				test(...slices);
 			}
@@ -103,6 +103,7 @@ async function preprocess(contents, dimensions) {
 	// Main function for preprocessing the contents of the NIFTI file, before feeding to model
 
 	var img = nj.float64(contents);
+	// img = img.slice([null,null,2])
 
 	// MinMax Normalization to 0-255 scale
 	var max_val = img.max();
@@ -113,7 +114,7 @@ async function preprocess(contents, dimensions) {
 		img = nj.add(img,127.5);
 	}
 
-	img = img.reshape(dimensions);
+	img = nj.uint8(img.reshape(dimensions));
 
 	var slices = []
 
@@ -201,9 +202,9 @@ async function test(slice_0, slice_1, slice_2, label) {
 		statusElement.innerText +='\n'
 
 		if(result[0]<0.5){
-			statusElement.innerText += ' It has been defaced.'
-		} else{
 			statusElement.innerText += ' It has NOT been defaced.'
+		} else{
+			statusElement.innerText += ' It has been defaced.'
 		}
 	});
 	
@@ -214,7 +215,7 @@ async function main() {
 	const inputElement = document.getElementById('file_input');
 	inputElement.addEventListener('change', readFile, false);
 
-	await loadModel('models/model.json', (model) => {
+	await loadModel(path.join('model_js','model.json'), (model) => {
 		console.log('Model Has Been Loaded');
 		})
 
