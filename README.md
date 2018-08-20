@@ -118,6 +118,6 @@ Note : The weight sharing and elementwise addition features were used specifical
 ## Next Steps
 
 - ~~Fix the NIFTI file read, which is corrupted right now.~~
-- ~~Implement mean preprocessing in javascript detector tool. ~~
+- ~~Implement mean preprocessing in javascript detector tool.~~
 - Make integratable into other validators.
 - Run as a Node app
