@@ -64,7 +64,8 @@ Center slice along each of the dimensions
 
 ![slice](assets/undefaced_slice.jpg)
 
-Note : The existing model uses `mean` preprocessing. The reasoning behind this is that the mean blurs out the intricate details of the neural parts, thus allowing the model to give emphasis to the actual shape of the structure, which is essential for deface detection.
+Note : The existing model uses `slice` preprocessing. This is provides a faster preprocessing step and simultaneously achieves a good sensitivity and specificity.
+On the other hand, the `mean` preprocessing blurs out the intricate details of the neural anatomy, and thus will potentially allow the model to give emphasis to the actual shape of the structure, which is essential for deface detection.
 
 For faster experimentation, the mri data is first stored as numpy(npz) files.
 
@@ -116,7 +117,7 @@ Note : The weight sharing and elementwise addition features were used specifical
 
 ## Next Steps
 
-- Fix the NIFTI file read, which is corrupted right now.
-- Implement mean preprocessing in javascript detector tool. 
+- ~~Fix the NIFTI file read, which is corrupted right now.~~
+- ~~Implement mean preprocessing in javascript detector tool. ~~
 - Make integratable into other validators.
 - Run as a Node app
