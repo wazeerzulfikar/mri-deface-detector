@@ -1,14 +1,7 @@
 const tf = require('@tensorflow/tfjs');
 
-// Only for debugging purposes locally
-// const data = require('./public/data/mri_full_uint8.json')
-const data_64 = require('./public/data/mri_64.json')
-
 var path = require('path')
-
 var Jimp = require('jimp')
-
-var nifti = require('nifti-js')
 var niftijs = require('nifti-reader-js')
 var pako = require('pako')
 var nj = require('numjs')
@@ -18,11 +11,13 @@ let model;
 const messageElement = document.getElementById('message');
 const statusElement = document.getElementById('status');
 const imageElement = document.getElementById('images');
+const inputElement = document.getElementById('file_input');
 
 async function loadModel(filename, callback) {
 	model = await tf.loadModel(filename);
 	callback(model);
 }
+
 
 function clearElement(element){
 	while (element.firstChild) {
@@ -30,9 +25,34 @@ function clearElement(element){
 	}
 }
 
+
+function readNIFTI(file) {
+
+	if (niftijs.isCompressed(file)) {
+		var file = niftijs.decompress(file);
+		console.log('Decompressed')
+	}
+
+	if (niftijs.isNIFTI(file)) {
+		var niftiHeader = niftijs.readHeader(file);
+		var dimensions = niftiHeader.dims.slice(1,4).reverse();
+		console.log('Dimensions : '+dimensions);
+		var image = niftijs.readImage(niftiHeader, file);
+	} else {
+		statusElement.innerText = `Error! Please provide a valid NIFTI file.`;
+		return;
+	}
+
+	return {
+		image: new Int16Array(image),
+		dimensions : dimensions
+	};
+}
+
+
 function readFile(e) {
 
-	file = e.target.files[0];
+	var file = e.target.files[0];
 
 	var reader = new FileReader();
 
@@ -51,40 +71,13 @@ function readFile(e) {
 
 				// METHOD 1 - Using NIFTI-Reader-JS
 
-				var file = e.target.result;
-				if (niftijs.isCompressed(file)) {
-					file = niftijs.decompress(file);
-					console.log('Decompressed')
-				}
+				var filename = e.target.result;
 
-				if (niftijs.isNIFTI(file)) {
-					var niftiHeader = niftijs.readHeader(file);
-					var dimensions = niftiHeader.dims.slice(1,4).reverse();
-					console.log('Dimensions : '+dimensions);
-					var image = niftijs.readImage(niftiHeader,file);
-				} else {
-					statusElement.innerText = `Error! Please provide a valid NIFTI file.`;
-					return;
-				}
+				var contents = readNIFTI(filename);
+				if (contents==undefined) return;
 
-				var image = new Int16Array(image);
-
-				// CheckSum
-				// console.log(image.reduce((a,b)=>a+b,0));
-
-
-				//  METHOD 2 - Using NIFTI-JS
-
-				// var unzipped = pako.inflate(e.target.result);
-				// var contents = nifti.parse(unzipped);
-				// var image = contents.data
-
-				// Check if contents are correct using sum of pixels
-
-				// var check = new int16Array(contents.data)
-				// const uniqueValues = [...new Set(check)]; 
-
-				// var image = new Uint8Array(Array.prototype.slice.call(image))
+				var image = contents.image;
+				var dimensions = contents.dimensions;
 
 				var slices = await preprocess(image, dimensions, 'slice');
 
@@ -95,6 +88,7 @@ function readFile(e) {
 
 	reader.readAsArrayBuffer(file);
 }
+
 
 function axisMean(img, dimensions, axis) {
 	// Arithmetic Mean along specified axis
@@ -116,6 +110,7 @@ function axisMean(img, dimensions, axis) {
 
 	return nj.float64(slice).reshape([dimensions[axes[0]],dimensions[axes[1]]]);
 }
+
 
 function minmaxNormalize(img) {
 	// MinMax Normalization to 0-255 scale
@@ -242,9 +237,9 @@ async function test(slice_0, slice_1, slice_2, label) {
 	
 }
 
+
 async function main() {
 
-	const inputElement = document.getElementById('file_input');
 	inputElement.addEventListener('change', readFile, false);
 
 	await loadModel(path.join('model_js','model.json'), (model) => {
