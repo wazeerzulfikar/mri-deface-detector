@@ -107,6 +107,15 @@ The figure below represents the simplified model architecture:
 
 Note : The weight sharing and elementwise addition features were used specifically to ensure the independence of model performance on the order in which the cross-sections are passed to the model, thus making it more robust.
 
+##### Metrics
+
+In concordance to the neuroimaging community, the trained model is validated using sensitivity and specificity metrics, where :
+
+Sensitivity = True Positives / (True Positives + False Negatives)\
+Specificity = True Negatives / (True Negatives + False Positives)
+
+Note : The existing model has a `sensitivity = 0.9898` and `specificity = 0.9849` on the Test Set.
+
 ### Deface Detector Tool
 
 #### Port the Custom Model to Deface Detector
