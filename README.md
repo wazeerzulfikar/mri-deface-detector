@@ -111,8 +111,8 @@ Note : The weight sharing and elementwise addition features were used specifical
 
 In concordance to the neuroimaging community, the trained model is validated using sensitivity and specificity metrics, where :
 
-Sensitivity = True Positives / (True Positives + False Negatives)\
-Specificity = True Negatives / (True Negatives + False Positives)
+`Sensitivity = TP / (TP + FN)`\
+`Specificity = TN / (TN + FP)`
 
 Note : The existing model has a `sensitivity = 0.9898` and `specificity = 0.9849` on the Test Set.
 
