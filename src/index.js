@@ -34,6 +34,21 @@ function displayImage(image) {
 	});
 }
 
+function showResults(result) {
+	console.log('Prediction : '+result);
+
+	var status = `Prediction : ${result[0].toFixed(2)} `;
+
+	statusElement.innerText = status;
+	statusElement.innerText +='\n'
+
+	if(result[0]<0.5){
+		statusElement.innerText += ' It has NOT been defaced.'
+	} else{
+		statusElement.innerText += ' It has been defaced.'
+	}
+}
+
 function readFile(e) {
 
 	var file = e.target.files[0];
@@ -42,9 +57,9 @@ function readFile(e) {
 
 	reader.onerror = (e) => console.log('error');
 
-	reader.onload = async function(e) {
+	reader.onload = function(e) {
 
-		if (e.target.readyState== FileReader.DONE) {
+		if (e.target.readyState == FileReader.DONE) {
 			if (!e.target.result) {
 				return;
 			}  
@@ -52,8 +67,6 @@ function readFile(e) {
 
 				clearElement(imageElement);
 				clearElement(statusElement);
-
-				// METHOD 1 - Using NIFTI-Reader-JS
 
 				var file = e.target.result;
 
@@ -65,21 +78,7 @@ function readFile(e) {
 
 				var slices = preprocess(image, dimensions, 'slice', displayImage);
 
-				predict(model, ...slices).then(function(result){
-
-					console.log('Prediction : '+result);
-
-					var status = `Prediction : ${result[0].toFixed(2)} `;
-
-					statusElement.innerText = status;
-					statusElement.innerText +='\n'
-
-					if(result[0]<0.5){
-						statusElement.innerText += ' It has NOT been defaced.'
-					} else{
-						statusElement.innerText += ' It has been defaced.'
-					}
-				});
+				predict(model, ...slices).then(showResults);
 			}
 		}
 	};
