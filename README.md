@@ -2,7 +2,9 @@
 
 The de-identification of Brain MRI (Magnetic Resonance Imaging) scans, which is an important ethical step while publicly sharing datasets, is called defacing. Defacing involves removing or masking the part of the image corresponding to the face, while simultaneously ensuring brain data is not lost in the process.
 
-This javascript tool intends to serve a trained deep learning model to do the job of detecting deface in an MRI scan quickly and efficiently. The tool will be easy to integrate into automatic validators such as the [BIDS Validator](https://github.com/INCF/bids-validator).
+This javascript tool intends to serve a trained deep learning model to do the job of detecting deface in an MRI scan quickly and efficiently. The tool will be easy to integrate into automatic validators such as the [BIDS Validator](https://github.com/INCF/bids-validator). 
+
+The deep learning model consists of only `34,937` parameters, hence taking a mere `156 KB` overhead on storage, while producing lighting fast predictions on the browser.
 
 ## Requirements
 - Node>=8.9.0
@@ -106,6 +108,8 @@ The figure below represents the simplified model architecture:
 ![Model Architecture](assets/model_architecture.png)
 
 Note : The weight sharing and elementwise addition features were used specifically to ensure the independence of model performance on the order in which the cross-sections are passed to the model, thus making it more robust.
+
+The model only contains `34,937` parameters making the saved keras model only `495 KB`. The size is further optimized to `156 KB` while converting to the JS form.
 
 ##### Metrics
 
