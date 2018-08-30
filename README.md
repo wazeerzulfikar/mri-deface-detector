@@ -121,7 +121,7 @@ Note : The existing model has a `sensitivity = 0.9898` and `specificity = 0.9849
 #### Port the Custom Model to Deface Detector
 
 - The TensorFlowJS model consists of the model structure in the form a JSON file and the weights as shards saved in a `model_js` directory.
-- Copy `model_js` into the `/public` folder
+- Copy `model_js` into the `/dist` folder
 - Kick Start the detector!
 
 ## Next Steps
