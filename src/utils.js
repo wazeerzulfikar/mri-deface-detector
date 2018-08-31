@@ -13,6 +13,7 @@ var utils = {
 	*/
 
 	loadModel : async function (filename, callback) {
+
 		model = await tf.loadModel(filename);
 		callback(model);
 		return model;
@@ -26,6 +27,7 @@ var utils = {
 	*/
 
 	readNifti : function (file, callback) {
+
 			if (niftijs.isCompressed(file)) {
 				var file = niftijs.decompress(file);
 				console.log('Decompressed')
@@ -56,7 +58,6 @@ var utils = {
 	*/
 
 	preprocess : function (contents, dimensions, input_size, preprocess_method, callback) {
-		// Main function for preprocessing the contents of the NIFTI file, before feeding to model
 
 		var img = nj.float64(contents);
 
@@ -68,16 +69,14 @@ var utils = {
 
 		if (preprocess_method=='slice') {
 			for (var i=0;i<dimensions.length;i++) {
-				var key = [null, null, null];
-				key[i] = dimensions[i]/2;
-				var slice = img.pick(...key);
-				slices.push(slice.T);
+				var slice = utils.centerSlice(img, dimensions, i).T;
+				slices.push(slice);
 			}
 		} 
 		else if (preprocess_method=='mean') {
 			for (var i=0;i<dimensions.length;i++) {
-				slice = axisMean(img, dimensions, i).T;
-				slices.push(minmaxNormalize(slice));
+				slice = utils.axisMean(img, dimensions, i).T;
+				slices.push(utils.minmaxNormalize(slice));
 			}	
 
 		}
@@ -99,7 +98,6 @@ var utils = {
 	*/
 
 	resizeImage : function (img_data, target_size, callback) {
-		// function for  resizing of image.
 
 		console.log('Resizing..')
 
@@ -138,13 +136,12 @@ var utils = {
 	/**
 	* axisMean
 	*
-	* Preprocess method which takes 3D mri scan as numjs NdArray and 
-	* returns the three slices after performing arithmetic mean preprocess.
+	* Preprocess method which takes 3D mri scan as numjs NdArray and the axis,
+	* returns the respective slice after performing arithmetic mean preprocess.
 	* More information on the readme.
 	*/
 
 	axisMean : function (img, dimensions, axis) {
-		// Arithmetic Mean along specified axis
 
 		axes = [0,1,2];
 		axes.splice(axis, 1);
@@ -165,6 +162,21 @@ var utils = {
 	},
 
 	/**
+	* centerSlice
+	*
+	* Preprocess method which takes 3D mri scan as numjs NdArray and the axis,
+	* returns respective slices after performing center slice preprocess.
+	* More information on the readme.
+	*/
+
+	centerSlice : function (img, dimensions, axis) {
+
+		var key = [null, null, null];
+		key[axis] = dimensions[axis]/2;
+		return img.pick(...key);
+	},
+
+	/**
 	* minmaxNormalize
 	*
 	* Takes the image, and does the min max normalization on it. Important for 
@@ -173,7 +185,6 @@ var utils = {
 	*/
 
 	minmaxNormalize : function (img) {
-		// MinMax Normalization to 0-255 scale
 
 		var max_val = img.max();
 		var min_val = img.min();
