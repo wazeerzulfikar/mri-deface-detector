@@ -5,12 +5,25 @@ const tf = require('@tensorflow/tfjs');
 
 var utils = {
 
+	/**
+	* loadModel
+	*
+	* Given the filename, the function asynchronously loads
+	* the model and the callback handles the response
+	*/
+
 	loadModel : async function (filename, callback) {
 		model = await tf.loadModel(filename);
 		callback(model);
 		return model;
 	},
 
+	/**
+	* readNifti
+	*
+	* The function takes a file, checks for NIFTI, reads it
+	* and returns the necessary contents. The callback handles errors.
+	*/
 
 	readNifti : function (file, callback) {
 			if (niftijs.isCompressed(file)) {
@@ -33,6 +46,14 @@ var utils = {
 				dimensions : dimensions
 			};
 	},
+
+	/**
+	* preprocess
+	*
+	* Takes image and dimensions as read using readNifti, input_size indicating
+	* the input shape to the trained model. Preprocess method is one of `slice/mean`.
+	* Callback for displaying the image in the browser.
+	*/
 
 	preprocess : function (contents, dimensions, input_size, preprocess_method, callback) {
 		// Main function for preprocessing the contents of the NIFTI file, before feeding to model
@@ -62,14 +83,22 @@ var utils = {
 		}
 
 		for(var i=0;i<dimensions.length;i++) {
-			slices[i] = nj.float64(utils.resize(slices[i], input_size, callback));
+			slices[i] = nj.float64(utils.resizeImage(slices[i], input_size, callback));
 			slices[i] = nj.divide(slices[i], 255);
 		}
 		
 		return slices
 	},
 
-	resize : function (img_data, target_size, callback) {
+	/**
+	* resizeImage
+	*
+	* Takes a grayscale image as a numjs NdArray, and target size. 
+	* Callback to display the image on the browser.
+	* Returns the resized image as FloatArray.
+	*/
+
+	resizeImage : function (img_data, target_size, callback) {
 		// function for  resizing of image.
 
 		console.log('Resizing..')
@@ -106,6 +135,14 @@ var utils = {
 	    return resized_image_data;
 	},
 
+	/**
+	* axisMean
+	*
+	* Preprocess method which takes 3D mri scan as numjs NdArray and 
+	* returns the three slices after performing arithmetic mean preprocess.
+	* More information on the readme.
+	*/
+
 	axisMean : function (img, dimensions, axis) {
 		// Arithmetic Mean along specified axis
 
@@ -126,6 +163,14 @@ var utils = {
 
 		return nj.float64(slice).reshape([dimensions[axes[0]],dimensions[axes[1]]]);
 	},
+
+	/**
+	* minmaxNormalize
+	*
+	* Takes the image, and does the min max normalization on it. Important for 
+	* successful nifti read.
+	* Returns the normalized image.
+	*/
 
 	minmaxNormalize : function (img) {
 		// MinMax Normalization to 0-255 scale
