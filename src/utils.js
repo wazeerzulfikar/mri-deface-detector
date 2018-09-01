@@ -1,202 +1,198 @@
-var nj = require('numjs')
-var Jimp = require('jimp')
-var niftijs = require('nifti-reader-js')
-const tf = require('@tensorflow/tfjs');
+var nj = require('numjs');
+var Jimp = require('jimp');
+var niftijs = require('nifti-reader-js');
+var tf = require('@tensorflow/tfjs');
 
 var utils = {
+  /**
+   * loadModel
+   *
+   * Given the filename, the function asynchronously loads
+   * the model and the callback handles the response
+   */
 
-	/**
-	* loadModel
-	*
-	* Given the filename, the function asynchronously loads
-	* the model and the callback handles the response
-	*/
+  loadModel: async function(filename, callback) {
+    model = await tf.loadModel(filename);
+    callback(model);
+    return model;
+  },
 
-	loadModel : async function (filename, callback) {
+  /**
+   * readNifti
+   *
+   * The function takes a file, checks for NIFTI, reads it
+   * and returns the necessary contents. The callback handles errors.
+   */
 
-		model = await tf.loadModel(filename);
-		callback(model);
-		return model;
-	},
+  readNifti: function(file, callback) {
+    if (niftijs.isCompressed(file)) {
+      var file = niftijs.decompress(file);
+      console.log('Decompressed');
+    }
 
-	/**
-	* readNifti
-	*
-	* The function takes a file, checks for NIFTI, reads it
-	* and returns the necessary contents. The callback handles errors.
-	*/
+    if (niftijs.isNIFTI(file)) {
+      var niftiHeader = niftijs.readHeader(file);
+      var dimensions = niftiHeader.dims.slice(1, 4).reverse();
+      console.log('Dimensions : ' + dimensions);
+      var image = niftijs.readImage(niftiHeader, file);
+    } else {
+      callback(`Error! Please provide a valid NIFTI file.`);
+      return;
+    }
 
-	readNifti : function (file, callback) {
+    return {
+      image: new Int16Array(image),
+      dimensions: dimensions,
+    };
+  },
 
-			if (niftijs.isCompressed(file)) {
-				var file = niftijs.decompress(file);
-				console.log('Decompressed')
-			}
+  /**
+   * preprocess
+   *
+   * Takes image and dimensions as read using readNifti, input_size indicating
+   * the input shape to the trained model. Preprocess method is one of `slice/mean`.
+   * Callback for displaying the image in the browser.
+   */
 
-			if (niftijs.isNIFTI(file)) {
-				var niftiHeader = niftijs.readHeader(file);
-				var dimensions = niftiHeader.dims.slice(1,4).reverse();
-				console.log('Dimensions : '+dimensions);
-				var image = niftijs.readImage(niftiHeader, file);
-			} else {
-				callback(`Error! Please provide a valid NIFTI file.`);
-				return;
-			}
+  preprocess: function(
+    contents,
+    dimensions,
+    input_size,
+    preprocess_method,
+    callback
+  ) {
+    var img = nj.float64(contents);
 
-			return {
-				image: new Int16Array(image),
-				dimensions : dimensions
-			};
-	},
+    img = utils.minmaxNormalize(img);
 
-	/**
-	* preprocess
-	*
-	* Takes image and dimensions as read using readNifti, input_size indicating
-	* the input shape to the trained model. Preprocess method is one of `slice/mean`.
-	* Callback for displaying the image in the browser.
-	*/
+    img = nj.uint8(img.reshape(dimensions));
 
-	preprocess : function (contents, dimensions, input_size, preprocess_method, callback) {
+    var slices = [];
 
-		var img = nj.float64(contents);
+    if (preprocess_method == 'slice') {
+      for (var i = 0; i < dimensions.length; i++) {
+        var slice = utils.centerSlice(img, dimensions, i).T;
+        slices.push(slice);
+      }
+    } else if (preprocess_method == 'mean') {
+      for (var i = 0; i < dimensions.length; i++) {
+        slice = utils.axisMean(img, dimensions, i).T;
+        slices.push(utils.minmaxNormalize(slice));
+      }
+    }
 
-		img = utils.minmaxNormalize(img);
+    for (var i = 0; i < dimensions.length; i++) {
+      slices[i] = nj.float64(
+        utils.resizeImage(slices[i], input_size, callback)
+      );
+      slices[i] = nj.divide(slices[i], 255);
+    }
 
-		img = nj.uint8(img.reshape(dimensions));
+    return slices;
+  },
 
-		var slices = [];
+  /**
+   * resizeImage
+   *
+   * Takes a grayscale image as a numjs NdArray, and target size.
+   * Callback to display the image on the browser.
+   * Returns the resized image as FloatArray.
+   */
 
-		if (preprocess_method=='slice') {
-			for (var i=0;i<dimensions.length;i++) {
-				var slice = utils.centerSlice(img, dimensions, i).T;
-				slices.push(slice);
-			}
-		} 
-		else if (preprocess_method=='mean') {
-			for (var i=0;i<dimensions.length;i++) {
-				slice = utils.axisMean(img, dimensions, i).T;
-				slices.push(utils.minmaxNormalize(slice));
-			}	
+  resizeImage: function(img_data, target_size, callback) {
+    console.log('Resizing..');
 
-		}
+    var width = img_data.shape[0];
+    var height = img_data.shape[1];
+    img_data = img_data.flatten().tolist();
 
-		for(var i=0;i<dimensions.length;i++) {
-			slices[i] = nj.float64(utils.resizeImage(slices[i], input_size, callback));
-			slices[i] = nj.divide(slices[i], 255);
-		}
-		
-		return slices
-	},
+    var resized = new Jimp(height, width, function(err, image) {
+      let buffer = image.bitmap.data;
+      var i = 0;
+      for (var x = 0; x < height * width * 4; x += 4) {
+        buffer[x] = img_data[i];
+        buffer[x + 1] = img_data[i];
+        buffer[x + 2] = img_data[i];
+        buffer[x + 3] = 255;
+        i++;
+      }
 
-	/**
-	* resizeImage
-	*
-	* Takes a grayscale image as a numjs NdArray, and target size. 
-	* Callback to display the image on the browser.
-	* Returns the resized image as FloatArray.
-	*/
+      callback(image);
 
-	resizeImage : function (img_data, target_size, callback) {
+      image.resize(target_size, target_size);
+    });
 
-		console.log('Resizing..')
+    var i = 0;
+    let resized_image_data = new Float64Array(target_size * target_size);
+    for (var x = 0; x < height * width * 4; x += 4) {
+      resized_image_data[i] = resized.bitmap.data[x];
+      i++;
+    }
 
-		var width = img_data.shape[0]
-		var height = img_data.shape[1]
-		img_data = img_data.flatten().tolist();
+    return resized_image_data;
+  },
 
-		var resized = new Jimp(height,width, function (err, image) {
+  /**
+   * axisMean
+   *
+   * Preprocess method which takes 3D mri scan as numjs NdArray and the axis,
+   * returns the respective slice after performing arithmetic mean preprocess.
+   * More information on the readme.
+   */
 
-			let buffer = image.bitmap.data
-			var i = 0;
-			for(var x=0; x<height*width*4;x+=4) {
-				buffer[x] = img_data[i];
-				buffer[x+1] = img_data[i];
-				buffer[x+2] = img_data[i];
-				buffer[x+3] = 255;
-				i++;
-			}
+  axisMean: function(img, dimensions, axis) {
+    axes = [0, 1, 2];
+    axes.splice(axis, 1);
 
-			callback(image);
+    var slice = [];
 
-	        image.resize(target_size,target_size);	
-		});
+    for (var i = 0; i < dimensions[axes[0]]; i++) {
+      for (var j = 0; j < dimensions[axes[1]]; j++) {
+        key = [null, null, null];
+        key[axes[0]] = i;
+        key[axes[1]] = j;
+        slice.push(img.pick(...key).mean());
+      }
+    }
 
-		var i = 0;
-		let resized_image_data = new Float64Array(target_size*target_size);
-	    for(var x=0; x<height*width*4;x+=4) {
-			resized_image_data[i] = resized.bitmap.data[x];
-			i++;
-			
-		}
+    return nj
+      .float64(slice)
+      .reshape([dimensions[axes[0]], dimensions[axes[1]]]);
+  },
 
-	    return resized_image_data;
-	},
+  /**
+   * centerSlice
+   *
+   * Preprocess method which takes 3D mri scan as numjs NdArray and the axis,
+   * returns respective slices after performing center slice preprocess.
+   * More information on the readme.
+   */
 
-	/**
-	* axisMean
-	*
-	* Preprocess method which takes 3D mri scan as numjs NdArray and the axis,
-	* returns the respective slice after performing arithmetic mean preprocess.
-	* More information on the readme.
-	*/
+  centerSlice: function(img, dimensions, axis) {
+    var key = [null, null, null];
+    key[axis] = dimensions[axis] / 2;
+    return img.pick(...key);
+  },
 
-	axisMean : function (img, dimensions, axis) {
+  /**
+   * minmaxNormalize
+   *
+   * Takes the image, and does the min max normalization on it. Important for
+   * successful nifti read.
+   * Returns the normalized image.
+   */
 
-		axes = [0,1,2];
-		axes.splice(axis, 1);
+  minmaxNormalize: function(img) {
+    var max_val = img.max();
+    var min_val = img.min();
+    img = nj.divide(img, max_val - min_val);
+    img = nj.multiply(img, 255);
+    if (min_val < 0) {
+      img = nj.add(img, 127.5);
+    }
 
-		var slice = [];
-
-		for(var i=0;i<dimensions[axes[0]];i++){
-
-			for(var j=0;j<dimensions[axes[1]];j++) {
-				key = [null,null,null];
-				key[axes[0]]=i;
-				key[axes[1]]=j;
-				slice.push(img.pick(...key).mean())
-			}
-		}
-
-		return nj.float64(slice).reshape([dimensions[axes[0]],dimensions[axes[1]]]);
-	},
-
-	/**
-	* centerSlice
-	*
-	* Preprocess method which takes 3D mri scan as numjs NdArray and the axis,
-	* returns respective slices after performing center slice preprocess.
-	* More information on the readme.
-	*/
-
-	centerSlice : function (img, dimensions, axis) {
-
-		var key = [null, null, null];
-		key[axis] = dimensions[axis]/2;
-		return img.pick(...key);
-	},
-
-	/**
-	* minmaxNormalize
-	*
-	* Takes the image, and does the min max normalization on it. Important for 
-	* successful nifti read.
-	* Returns the normalized image.
-	*/
-
-	minmaxNormalize : function (img) {
-
-		var max_val = img.max();
-		var min_val = img.min();
-		img = nj.divide(img, max_val-min_val);
-		img = nj.multiply(img,255);
-		if(min_val<0) {
-			img = nj.add(img,127.5);
-		}
-
-		return img
-	}
-
-}
+    return img;
+  },
+};
 
 module.exports = utils;

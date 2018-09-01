@@ -18,6 +18,7 @@
     "nifti-js": "^1.0.1",
     "nifti-reader-js": "^0.5.4",
     "numjs": "^0.16.0",
+    "prettier": "^1.14.2",
     "watchify": "^3.11.0"
   },
   "scripts": {
