@@ -2,6 +2,12 @@ var tf = require('@tensorflow/tfjs');
 var utils = require('./utils');
 
 var detector = {
+  /**
+   * defaceDetect
+   *
+   * Takes a mri scan and returns a promise which when resolved contains the
+   * floating point prediction of the trained existing model.
+   */
 
   defaceDetect : async function (mri, callback) {
       var model_path = 'https://raw.githubusercontent.com/wazeerzulfikar/Deface-Detector/master/dist/model_js/model.json';
@@ -11,6 +17,14 @@ var detector = {
 
       return detector.customPredict(model, mri, preprocess_method, input_size, callback);
   },
+
+  /**
+   * customPredict
+   *
+   * Takes custom loaded model, mri scan, preprocess method, input_size and a callback for displaying image
+   * and returns a promise which when resolved contains the
+   * floating point prediction of the model.
+   */
 
   customPredict : async function(
     model,
