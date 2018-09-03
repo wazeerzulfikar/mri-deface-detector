@@ -1,14 +1,15 @@
 // dependencies ------------------------------------------------------
 
 var utils = require('./utils')
-var predict = require('./predict')
+var detector = require('./detector')
 
 // public api --------------------------------------------------------
 
 var defaceDetector = {
 	readNifti : utils.readNifti,
 	loadModel : utils.loadModel,
-	predict : predict
+	detect : detector.defaceDetect,
+	customPredict : detector.customPredict
 }
 
 // exports -----------------------------------------------------------

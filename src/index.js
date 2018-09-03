@@ -64,7 +64,8 @@ function readFile(e) {
         });
         if (mri == undefined) return;
 
-        detector.predict(model, mri, 'slice', 32, displayImage).then(showResults);
+        // detector.customPredict(model, mri, 'slice', 32, displayImage).then(showResults);
+        detector.detect(mri, displayImage).then(showResults);
       }
     }
   };
