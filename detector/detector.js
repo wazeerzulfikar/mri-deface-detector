@@ -3,7 +3,7 @@ var utils = require('./utils');
 
 var detector = {
   /**
-   * defaceDetect
+   * detectDeface
    *
    * Takes a mri scan and returns a promise which when resolved contains the
    * floating point prediction of the trained existing model.
@@ -15,18 +15,18 @@ var detector = {
       var input_size = 32;
       var preprocess_method = 'slice';
 
-      return detector.customPredict(model, mri, preprocess_method, input_size, callback);
+      return detector.detectDefaceCustom(model, mri, preprocess_method, input_size, callback);
   },
 
   /**
-   * customPredict
+   * detectDefaceCustom
    *
    * Takes custom loaded model, mri scan, preprocess method, input_size and a callback for displaying image
    * and returns a promise which when resolved contains the
    * floating point prediction of the model.
    */
 
-  customPredict : async function(
+  detectDefaceCustom : async function(
     model,
     mri,
     preprocess_method,

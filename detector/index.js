@@ -9,7 +9,7 @@ var defaceDetector = {
 	readNifti : utils.readNifti,
 	loadModel : utils.loadModel,
 	detectDeface : detector.detectDeface,
-	customPredict : detector.customPredict
+	detectDefaceCustom : detector.detectDefaceCustom
 }
 
 // exports -----------------------------------------------------------

@@ -66,7 +66,7 @@ function readFile(e) {
         });
         if (mri == undefined) return;
 
-        // detector.customPredict(model, mri, 'slice', 32, displayImage).then(showResults);
+        // detector.detectDefaceCustom(model, mri, 'slice', 32, displayImage).then(showResults);
         detector.detectDeface(mri, displayImage).then(showResults);
       }
     }
