@@ -6,33 +6,51 @@ This javascript tool intends to serve a trained deep learning model to do the jo
 
 The deep learning model consists of only `34,937` parameters, hence taking a mere `156 KB` overhead on storage, while producing lighting fast predictions on the browser.
 
+This tool can be used in the following ways:
+
+- Installed and used as a node package through npm
+- Run on the browser directly
+- Build custom model and run your own detector
+
 ## Requirements
 - Node>=8.9.0
 - Python3 (For training custom model)
 
+## Install
+
+Install with npm :
+```
+$ npm install mri-deface-detector
+```
+
+## Usage
+
+```
+detector = require('mri-deface-detector')
+
+// file passed as an ArrayBuffer
+mri_scan = detector.readNifti(file)
+
+detector.detectDeface(mri_scan)
+	.then(result => console.log(result))
+```
+
 ## How to Run the Detector on your Browser
 
-Using npm:
-
-```
-npm install
-npm run watch
-```
-
-Upload a `NIFTI` file to see results.
-
-## How to Run the Detector using Command Line
-
-Coming Soon!
+1. Clone this repository
+2. `cd` into the clone repository
+3. `$ npm install`
+4. `$ npm watch`
+5. Upload a [`NIFTI`](https://brainder.org/2012/09/23/the-nifti-file-format/) file to see results
 
 ## Build your own Detector
 
-The module has two components:
+This requires two steps:
 
-- Deep Learning Model(python)
-- Deface Detector Tool (javascript)
+- Train and Export the Deep Learning Model 
+- Using Custom Model in the Deface Detector Tool
 
-### Deep Learning Model
+### Training the Deep Learning Model 
 
 #### Dataset Preparation
 
@@ -120,13 +138,20 @@ In concordance to the neuroimaging community, the trained model is validated usi
 
 Note : The existing model has a `sensitivity = 0.9898` and `specificity = 0.9849` on the Test Set.
 
-### Deface Detector Tool
+### Using the Custom Model in the Deface Detector Tool
 
-#### Port the Custom Model to Deface Detector
+The model trained using `detector.py` (with export_js=True) will be stored in `/models` as `model_js`
 
-- The TensorFlowJS model consists of the model structure in the form a JSON file and the weights as shards saved in a `model_js` directory.
-- Copy `model_js` into the `/dist` folder
-- Kick Start the detector!
+```
+var detector = require('mri-deface-detector')
+var model = detector.loadModel('path/to/model_js/model.json')
+
+// file passed as an ArrayBuffer
+mri_scan = detector.readNifti(file)
+
+detector.detectDefaceCustom(model, mri_scan, preprocess_method, input_size, callback)
+	.then(result => console.log(result))
+```
 
 ## Next Steps
 
