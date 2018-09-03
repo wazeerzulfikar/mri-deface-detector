@@ -2,7 +2,7 @@
   "name": "mri-deface-detector",
   "version": "0.1.0",
   "description": "Detects if NIFTI image has been defaced",
-  "main": "src/index.js",
+  "main": "index.js",
   "engines": {
     "node": ">=8.9.0"
   },
@@ -24,7 +24,7 @@
   "scripts": {
     "pretest": "eslint --ignore-path .gitignore .",
     "build": "browserify src/index.js -o dist/bundle.js",
-    "watch": "watchify src/index.js -o dist/bundle.js & node server.js & open http://localhost:8080"
+    "watch": "watchify src/index.js -o dist/bundle.js & node src/server.js & open http://localhost:8080"
   },
   "devDependencies": {
     "eslint": "^5.5.0",

@@ -4,8 +4,7 @@ var path = require('path');
 var Jimp = require('jimp');
 var nj = require('numjs');
 
-var utils = require('./utils');
-var predict = require('./predict');
+var detector = require('../detector');
 
 let model;
 
@@ -60,12 +59,12 @@ function readFile(e) {
 
         var file = e.target.result;
 
-        var mri = utils.readNifti(file, error => {
+        var mri = detector.readNifti(file, error => {
           statusElement.innerText = error;
         });
         if (mri == undefined) return;
 
-        predict(model, mri, 'slice', 32, displayImage).then(showResults);
+        detector.predict(model, mri, 'slice', 32, displayImage).then(showResults);
       }
     }
   };
@@ -74,7 +73,7 @@ function readFile(e) {
 }
 
 async function main() {
-  model = await utils.loadModel(path.join('model_js', 'model.json'), model => {
+  model = await detector.loadModel(path.join('model_js', 'model.json'), model => {
     console.log('Model Has Been Loaded');
   });
 
