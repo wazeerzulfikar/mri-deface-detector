@@ -59,13 +59,15 @@ function readFile(e) {
 
         var file = e.target.result;
 
+        console.log(file)
+
         var mri = detector.readNifti(file, error => {
           statusElement.innerText = error;
         });
         if (mri == undefined) return;
 
         // detector.customPredict(model, mri, 'slice', 32, displayImage).then(showResults);
-        detector.detect(mri, displayImage).then(showResults);
+        detector.detectDeface(mri, displayImage).then(showResults);
       }
     }
   };

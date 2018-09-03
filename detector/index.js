@@ -8,7 +8,7 @@ var detector = require('./detector')
 var defaceDetector = {
 	readNifti : utils.readNifti,
 	loadModel : utils.loadModel,
-	detect : detector.defaceDetect,
+	detectDeface : detector.detectDeface,
 	customPredict : detector.customPredict
 }
 

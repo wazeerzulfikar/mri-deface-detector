@@ -9,7 +9,7 @@ var detector = {
    * floating point prediction of the trained existing model.
    */
 
-  defaceDetect : async function (mri, callback) {
+  detectDeface : async function (mri, callback) {
       var model_path = 'https://raw.githubusercontent.com/wazeerzulfikar/Deface-Detector/master/dist/model_js/model.json';
       var model = await utils.loadModel(model_path, model => console.log('Model Loaded'));
       var input_size = 32;
