@@ -41,7 +41,7 @@ detector.detectDeface(mri_scan)
 1. Clone this repository
 2. `cd` into the cloned repository
 3. `$ npm install`
-4. `$ npm watch`
+4. `$ npm run watch`
 5. Upload a [`NIFTI`](https://brainder.org/2012/09/23/the-nifti-file-format/) file to see results
 
 ## Build your own Detector
