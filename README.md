@@ -23,14 +23,15 @@ Install with npm :
 $ npm install mri-deface-detector
 ```
 
-## Usage
+## Basic Usage
 
 ```
-detector = require('mri-deface-detector')
+const detector = require('mri-deface-detector')
 
 // file passed as an ArrayBuffer
 mri_scan = detector.readNifti(file)
 
+// result is a prediction indicating probability of deface
 detector.detectDeface(mri_scan)
 	.then(result => console.log(result))
 ```
@@ -38,7 +39,7 @@ detector.detectDeface(mri_scan)
 ## How to Run the Detector on your Browser
 
 1. Clone this repository
-2. `cd` into the clone repository
+2. `cd` into the cloned repository
 3. `$ npm install`
 4. `$ npm watch`
 5. Upload a [`NIFTI`](https://brainder.org/2012/09/23/the-nifti-file-format/) file to see results
@@ -143,7 +144,7 @@ Note : The existing model has a `sensitivity = 0.9898` and `specificity = 0.9849
 The model trained using `detector.py` (with export_js=True) will be stored in `/models` as `model_js`
 
 ```
-var detector = require('mri-deface-detector')
+const detector = require('mri-deface-detector')
 var model = detector.loadModel('path/to/model_js/model.json')
 
 // file passed as an ArrayBuffer
@@ -157,5 +158,5 @@ detector.detectDefaceCustom(model, mri_scan, preprocess_method, input_size, call
 
 - ~~Fix the NIFTI file read, which is corrupted right now.~~
 - ~~Implement mean preprocessing in javascript detector tool.~~
-- Make integratable into other validators.
-- Run as a Node app
+- ~~Make integratable into other validators.~~
+- Add unit tests
