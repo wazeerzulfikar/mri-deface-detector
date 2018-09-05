@@ -38,7 +38,7 @@ detector.detectDeface(mri_scan)
 
 ## How to Run the Detector on your Browser
 
-1. Clone this repository
+1. Clone the github [repository](https://github.com/wazeerzulfikar/Deface-Detector)
 2. `cd` into the cloned repository
 3. `$ npm install`
 4. `$ npm run watch`
