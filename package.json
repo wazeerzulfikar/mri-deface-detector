@@ -1,6 +1,6 @@
 {
   "name": "mri-deface-detector",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Detects if NIFTI image has been defaced",
   "homepage": "https://github.com/wazeerzulfikar/Deface-Detector",
   "main": "index.js",
