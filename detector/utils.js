@@ -26,7 +26,7 @@ var utils = {
 
   readNifti: function(file, callback) {
     if (niftijs.isCompressed(file)) {
-      var file = niftijs.decompress(file);
+      file = niftijs.decompress(file);
       console.log('Decompressed');
     }
 
@@ -35,13 +35,20 @@ var utils = {
       var dimensions = niftiHeader.dims.slice(1, 4).reverse();
       console.log('Dimensions : ' + dimensions);
       var image = niftijs.readImage(niftiHeader, file);
+
+      if (image.byteLength==dimensions.reduce((prod, ele)=>prod*ele,2)){
+        var imageData = new Int16Array(image);
+      } else{
+        var imageData = new Int32Array(image);
+      }
+
     } else {
       callback(`Error! Please provide a valid NIFTI file.`);
       return;
     }
 
     return {
-      image: new Int16Array(image),
+      image: imageData,
       dimensions: dimensions,
     };
   },
