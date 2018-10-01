@@ -52,6 +52,12 @@ var utils = {
         return;
       }
 
+      if(niftiHeader.littleEndian==false) {
+        console.log('Need to Fix for Big Endian!');
+        callback('Need to Fix for Big Endian!');
+        return;
+      }
+
     } else {
       callback(`Error! Please provide a valid NIFTI file.`);
       return;
