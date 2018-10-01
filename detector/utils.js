@@ -32,6 +32,7 @@ var utils = {
 
     if (niftijs.isNIFTI(file)) {
       var niftiHeader = niftijs.readHeader(file);
+      console.log(niftiHeader)
       var dimensions = niftiHeader.dims.slice(1, 4).reverse();
       console.log('Dimensions : ' + dimensions);
       var image = niftijs.readImage(niftiHeader, file);
@@ -39,7 +40,7 @@ var utils = {
       if (image.byteLength==dimensions.reduce((prod, ele)=>prod*ele,2)){
         var imageData = new Int16Array(image);
       } else{
-        var imageData = new Int32Array(image);
+        var imageData = new Float32Array(image);
       }
 
     } else {
@@ -49,7 +50,7 @@ var utils = {
 
     return {
       image: imageData,
-      dimensions: dimensions,
+      dimensions: dimensions
     };
   },
 
@@ -192,6 +193,7 @@ var utils = {
   minmaxNormalize: function(img) {
     var max_val = img.max();
     var min_val = img.min();
+
     img = nj.divide(img, max_val - min_val);
     img = nj.multiply(img, 255);
     if (min_val < 0) {
