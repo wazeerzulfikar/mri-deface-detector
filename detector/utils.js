@@ -53,9 +53,11 @@ var utils = {
       }
 
       if(niftiHeader.littleEndian==false) {
-        console.log('Need to Fix for Big Endian!');
-        callback('Need to Fix for Big Endian!');
-        return;
+        var imageView = new DataView(image);
+        var imageData = new Array();
+        for(var i=0;i<imagePixels*2;i+=2) {
+          imageData[i/2] = imageView.getInt16(i,false)
+        }
       }
 
     } else {
