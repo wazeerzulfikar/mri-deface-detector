@@ -35,12 +35,21 @@ var utils = {
       console.log(niftiHeader)
       var dimensions = niftiHeader.dims.slice(1, 4).reverse();
       console.log('Dimensions : ' + dimensions);
-      var image = niftijs.readImage(niftiHeader, file);
 
-      if (image.byteLength==dimensions.reduce((prod, ele)=>prod*ele,2)){
+      var image = niftijs.readImage(niftiHeader, file);
+      var imagePixels = dimensions.reduce((prod, ele)=>prod*ele);
+
+      if (image.byteLength==imagePixels) {
+        var imageData = new Int8Array(image);
+      } else if (image.byteLength==imagePixels*2){
         var imageData = new Int16Array(image);
-      } else{
+      } else if (image.byteLength==imagePixels*4){
         var imageData = new Float32Array(image);
+      } else if (image.byteLength==imagePixels*8) {
+        var imageData = new Float64Array(image);
+      } else {
+        callback('Error in file data format!');
+        return;
       }
 
     } else {
