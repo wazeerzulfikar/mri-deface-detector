@@ -1,3 +1,5 @@
+console.log('Hello')
+
 var path = require('path');
 var Jimp = require('jimp');
 var nj = require('numjs');
