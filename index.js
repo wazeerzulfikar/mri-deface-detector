@@ -1,10 +1,10 @@
-var tf = require('@tensorflow/tfjs');
-
 var path = require('path');
 var Jimp = require('jimp');
 var nj = require('numjs');
-
 var detector = require('mri-deface-detector');
+
+var tf = require('@tensorflow/tfjs');
+
 
 let model;
 
