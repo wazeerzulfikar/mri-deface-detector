@@ -76,10 +76,6 @@ function readFile(e) {
 }
 
 async function main() {
-  model = await detector.loadModel(path.join('model_js', 'model.json'), model => {
-    console.log('Model Has Been Loaded');
-  });
-
   inputElement.addEventListener('change', readFile, false);
 }
 
