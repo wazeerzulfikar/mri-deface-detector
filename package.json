@@ -18,7 +18,7 @@
     "browserify": "^16.2.2",
     "browserify-shim": "^3.8.14",
     "express": "^4.16.3",
-    "jimp": "^0.2.27",
+    "jimp": "0.2.27",
     "nifti-js": "^1.0.1",
     "nifti-reader-js": "^0.5.4",
     "numjs": "^0.16.0",
