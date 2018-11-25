@@ -15,6 +15,10 @@ This tool can be used in the following ways:
 - Run on the browser directly
 - Build custom model and run your own detector
 
+## Quickstart
+1. Open Google Chrome. 
+2. Go to https://wazeerzulfikar.github.io/Deface-Detector/ and upload a [`NIFTI`](https://brainder.org/2012/09/23/the-nifti-file-format/) file to see results.
+
 ## Requirements
 - Node>=8.9.0
 - Python3 (For training custom model)
