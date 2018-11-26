@@ -17,7 +17,7 @@ This tool can be used in the following ways:
 
 ## Quickstart
 1. Open Google Chrome. 
-2. Go to https://wazeerzulfikar.github.io/deface-detector/ and upload a [`NIFTI`](https://brainder.org/2012/09/23/the-nifti-file-format/) file to see results.
+2. Go to https://wazeerzulfikar.github.io/mri-deface-detector/ and upload a [`NIFTI`](https://brainder.org/2012/09/23/the-nifti-file-format/) file to see results.
 
 ## Requirements
 - Node>=8.9.0
